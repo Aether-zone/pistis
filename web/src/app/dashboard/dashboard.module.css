@@ -1,0 +1,302 @@
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.875rem;
+  margin-bottom: 2rem;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid #e2e5ea;
+  border-radius: 0.5rem;
+  background: #fff;
+  color: inherit;
+  text-decoration: none;
+}
+
+.tile:hover {
+  border-color: #b9c6dd;
+}
+
+.tileValue {
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.tileLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tileHint {
+  color: #6b7280;
+  font-size: 0.8125rem;
+}
+
+.section {
+  margin-bottom: 2.5rem;
+}
+
+.sectionHead {
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.sectionHead h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.count {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.scroller {
+  overflow-x: auto;
+  border: 1px solid #e2e5ea;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.table th,
+.table td {
+  padding: 0.625rem 0.875rem;
+  text-align: left;
+  border-bottom: 1px solid #eef0f3;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table th {
+  background: #f7f8fa;
+  font-weight: 600;
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+}
+
+.wrap {
+  white-space: normal;
+  word-break: break-word;
+  max-width: 22rem;
+}
+
+.empty {
+  padding: 1.25rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.yes {
+  background: #e6f4ec;
+  color: #1f6b3f;
+}
+
+.no {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.details {
+  margin-top: 0.75rem;
+  border: 1px solid #e2e5ea;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.summary {
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.875rem;
+  padding: 0 0.875rem 1rem;
+}
+
+.field {
+  display: block;
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.3125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.input {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.4375rem 0.5625rem;
+  border: 1px solid #cbd2dc;
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.check {
+  display: flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.span {
+  grid-column: 1 / -1;
+}
+
+.primary,
+.danger,
+.quiet {
+  padding: 0.4375rem 0.875rem;
+  border-radius: 0.375rem;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.primary {
+  border: 1px solid #2f6feb;
+  background: #2f6feb;
+  color: #fff;
+}
+
+.danger {
+  border: 1px solid #d9b3b6;
+  background: #fff;
+  color: #96222a;
+}
+
+.quiet {
+  border: 1px solid #cbd2dc;
+  background: #fff;
+  color: #303743;
+}
+
+.primary:disabled,
+.danger:disabled,
+.quiet:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.error,
+.ok,
+.secret {
+  margin: 0 0.875rem 0.875rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+}
+
+.error {
+  background: #fdecec;
+  color: #96222a;
+}
+
+.ok {
+  background: #e6f4ec;
+  color: #1f6b3f;
+}
+
+.secret {
+  background: #fff8e1;
+  color: #6b4e00;
+}
+
+.secretValue {
+  display: block;
+  margin-top: 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
+.inlineForm {
+  /*
+   * inline-flex, not inline: the controls inside are `.input`, which is 100%
+   * wide, so an inline form let the select consume the whole cell and pushed
+   * the button out over the next column — where it also intercepted clicks.
+   */
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.inlineForm .input {
+  width: auto;
+  min-width: 8rem;
+}
+
+.crumb {
+  margin: 0 0 0.75rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.crumb a {
+  color: #2f6feb;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.875rem;
+  margin: 0 0 2rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid #e2e5ea;
+  border-radius: 0.5rem;
+  background: #fff;
+}
+
+.facts dt {
+  margin-bottom: 0.1875rem;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.facts dd {
+  margin: 0;
+  font-size: 0.9375rem;
+}

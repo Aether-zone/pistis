@@ -1,0 +1,18 @@
+{
+  "name": "@pistis/web-e2e",
+  "version": "0.0.1",
+  "private": true,
+  "nx": {
+    "implicitDependencies": [
+      "@pistis/web"
+    ],
+    "targets": {
+      "e2e": {
+        "dependsOn": [
+          "@pistis/api:build",
+          "@pistis/web:build"
+        ]
+      }
+    }
+  }
+}

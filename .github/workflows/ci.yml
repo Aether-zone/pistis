@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  # A new push supersedes the run in flight for the same ref; main is never
+  # cancelled, so its history stays complete.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # nx affected compares against a base commit, which needs history.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Derives the SHAs nx affected compares against: the last successful run
+      # on main, rather than the previous commit.
+      - uses: nrwl/nx-set-shas@v4
+
+      # TypeScript project references are generated. A stale one means the
+      # committed tsconfigs disagree with the dependency graph.
+      - run: pnpm exec nx sync:check
+
+      - run: pnpm exec nx affected -t lint typecheck test build --parallel=3
+
+  e2e:
+    name: End-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The unit suites are the fast signal; do not spend a browser download on a
+    # branch that already fails them.
+    needs: verify
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - uses: nrwl/nx-set-shas@v4
+
+      - run: pnpm exec nx affected -t e2e --parallel=1
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            web-e2e/test-output
+            web-e2e/playwright-report
+          retention-days: 7
+          if-no-files-found: ignore
