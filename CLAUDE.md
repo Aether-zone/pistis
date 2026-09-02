@@ -240,6 +240,10 @@ Three Dockerfiles — `api/Dockerfile`, `web/Dockerfile` and a combined `Dockerf
   lockfile, with `@pistis/contract` rewritten to a `file:` reference under
   `workspace_modules`. better-sqlite3 and bcrypt are compiled there, where a
   toolchain exists, and copied to a runner on the same base so the bindings match.
+- **The web image installs with `--ignore-scripts`.** A pnpm workspace install
+  resolves every project's dependencies, so the web build would otherwise try to
+  compile the api's better-sqlite3 and bcrypt and fail for want of a toolchain
+  it has no other use for.
 - **The web image uses Next's standalone output**, which needs
   `outputFileTracingRoot` set to the workspace root — otherwise tracing misses
   pnpm's hoisted `node_modules` and the server cannot start. Standalone mirrors

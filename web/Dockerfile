@@ -22,7 +22,12 @@ COPY web/package.json web/
 COPY api-e2e/package.json api-e2e/
 COPY web-e2e/package.json web-e2e/
 
-RUN pnpm install --frozen-lockfile
+# --ignore-scripts because a workspace install resolves *every* project's
+# dependencies, including the api's better-sqlite3 and bcrypt, which would
+# otherwise try to compile and fail for want of a toolchain. This image never
+# runs them; adding python3/make/g++ here would build them only to discard the
+# stage. It also skips Playwright's browser download.
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
