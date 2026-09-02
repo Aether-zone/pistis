@@ -225,8 +225,7 @@ npx nx dev @pistis/web        # reads web/.env.local
 - The dashboard mirrors the CASL rules to decide which controls to show. The api remains the authority, but the two can drift — a rule change needs both.
 - Sessions cannot be revoked server-side: signing out clears the cookie, but the JWT stays valid until it expires (`SESSION_TTL`, default 12h). A session table, like `oauth_access_tokens`, would fix it.
 - The api is still scaffolding in places: `AuthService.login` verifies credentials but returns nothing (`// Create token or session`) — the reusable half is `AuthService.verifyCredentials`, which OAuth uses. `IdentityModule` is empty.
-- `web-e2e:typecheck` fails on `playwright.config.mts` (`process.env`, `import.meta.dirname`) because the project's tsconfig pulls in no `node` types. CI does not run it.
-- `api-e2e`'s generated teardown calls `killPort`, so pointing it at a port someone else is serving on will kill that server. It assumes it owns the api it talks to.
+- Both e2e projects declare their `types` explicitly (`node`, and `jest` for api-e2e). `tsconfig.base.json` sets none, so without that they typecheck against no globals at all — the generated configs omitted it and neither project had ever been typechecked.
 - `User.updatedAt` maps to a column literally named `udpated_at` (typo is in the entity and therefore in the sqlite schema).
 - `UserController.getUsers` still reads `PageRequestDTO` from `@Param()` rather than `@Query()` and never validates it, so `pageNumber`/`perPage` arrive undefined. `OrganizationController.getOrganizations` shows the fixed shape.
 - `UserService.getUsers` puts entities into a `Pageable<UserDTO>` without mapping them, so that endpoint leaks the entity shape.
@@ -258,10 +257,20 @@ when a draft is published, and no longer on tag pushes, which would race the
 release build for the same tags. `latest` tracks the newest full release rather
 than `main`.
 
-`nx affected` in CI needs `fetch-depth: 0` and `nrwl/nx-set-shas`. `web-e2e`
-builds through the target's `dependsOn` rather than inside Playwright's
-`webServer`, because a nested `nx` invocation races the outer one for the
-project graph.
+`nx affected` in CI needs `fetch-depth: 0` and `nrwl/nx-set-shas`.
+
+**Both e2e suites start their own servers on dedicated ports** (3100/3101 for
+web-e2e, 3102 for api-e2e) and stop them by pid. Neither depends on
+`@pistis/api:serve`: that target is continuous, so its lifetime overlaps
+whatever runs next and its watcher rebuilds `api/dist` underneath it. The
+generated api-e2e teardown called `killPort`, which stops whatever holds a port
+rather than what the suite started — on a developer's machine that is as likely
+to be a server they are using. `web-e2e` builds through the target's
+`dependsOn` rather than inside Playwright's `webServer`, because a nested `nx`
+invocation races the outer one for the project graph.
+
+`api-e2e/.spec.swcrc` targets es2022: at es2017 SWC downlevels `??` and its
+nullish-coalescing transform panics on the support files.
 
 ## Build and test plumbing
 
