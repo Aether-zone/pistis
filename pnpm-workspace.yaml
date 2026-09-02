@@ -1,0 +1,7 @@
+packages:
+  - 'packages/*'
+  - 'api'
+  - 'api-e2e'
+  - 'web'
+  - 'web-e2e'
+  - 'contract'

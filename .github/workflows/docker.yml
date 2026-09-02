@@ -1,0 +1,95 @@
+name: Docker
+
+on:
+  # `published`, not `created`: `created` does not fire when a draft release is
+  # published, which is how most releases are actually cut. `published` covers
+  # both that and a release made directly.
+  release:
+    types: [published]
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  # Only supersede pull request builds. A release build that loses its images to
+  # a cancellation leaves a published release with nothing to pull.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: pistis-api
+            dockerfile: api/Dockerfile
+          - image: pistis-web
+            dockerfile: web/Dockerfile
+          - image: pistis
+            dockerfile: Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Pull requests build but do not publish: an untrusted fork must never be
+      # able to push an image under this name.
+      - name: Sign in to the registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            # Releases carry the version; the tag they were cut from is what
+            # metadata-action reads. major.minor and major are skipped
+            # automatically for a prerelease, so v2.0.0-rc.1 never moves `2.0`.
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            # Every build is addressable by commit, released or not.
+            type=sha,format=long
+            type=ref,event=branch
+            type=ref,event=pr
+            # `latest` follows the newest full release rather than main, so
+            # pulling it does not hand someone unreleased code.
+            type=raw,value=latest,enable=${{ github.event_name == 'release' && github.event.release.prerelease == false }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          # The build context is the repository root for all three: the images
+          # build from a pnpm workspace and need the lockfile and every manifest.
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          # Native modules are compiled during the build, so arm64 needs
+          # emulation and roughly triples the time. Add it when something
+          # actually runs on arm64.
+          platforms: linux/amd64

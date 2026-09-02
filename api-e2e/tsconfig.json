@@ -1,0 +1,18 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "out-tsc/@pistis/api-e2e",
+    "esModuleInterop": true,
+    "noUnusedLocals": false,
+    "noImplicitAny": false,
+    "types": [
+      "jest",
+      "node"
+    ]
+  },
+  "include": [
+    "jest.config.cts",
+    "src/**/*.ts"
+  ],
+  "references": []
+}
