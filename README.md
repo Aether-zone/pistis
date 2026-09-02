@@ -160,9 +160,15 @@ their exact version, so `v2.0.0-rc.1` never moves `2.0`, `2` or `latest`.
 
 ## Architecture notes
 
-`CLAUDE.md` at the repository root carries the working notes: layering rules,
-the reasoning behind decisions that look arbitrary, and the current sharp edges.
-Read it before changing the OAuth, authorization or dashboard code.
+The decisions that shaped this — token formats, how sessions differ from access
+tokens, why the browser never calls the API — are recorded as
+[Architecture Decision Records](docs/adr/README.md), each with the consequences
+it carries.
+
+`CLAUDE.md` at the repository root carries the working notes that sit below
+that level: layering rules, the reasoning behind code that looks arbitrary, and
+the current sharp edges. Read it before changing the OAuth, authorization or
+dashboard code.
 
 ## Licence
 

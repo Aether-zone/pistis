@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+Architectural decisions and their consequences are recorded in
+[`docs/adr/`](docs/adr/README.md). This file covers what sits below that: the
+conventions and sharp edges that are not decisions so much as things to know.
+
 ## Workspace
 
 Nx 23 monorepo (`@pistis/source`) using **pnpm workspaces**, package-manager-based projects (no `project.json` — Nx targets live inline under the `nx` key of each project's `package.json`, everything else is inferred by Nx plugins for TS/Next/webpack/eslint/jest/playwright).
