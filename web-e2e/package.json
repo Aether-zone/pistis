@@ -4,14 +4,20 @@
   "private": true,
   "nx": {
     "implicitDependencies": [
-      "@pistis/web"
+      "@pistis/web",
+      "@pistis/api"
     ],
     "targets": {
       "e2e": {
+        "executor": "nx:run-commands",
         "dependsOn": [
           "@pistis/api:build",
           "@pistis/web:build"
-        ]
+        ],
+        "options": {
+          "cwd": "web-e2e",
+          "command": "playwright test"
+        }
       }
     }
   }

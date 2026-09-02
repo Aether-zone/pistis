@@ -256,6 +256,8 @@ importers:
         specifier: ^19.0.0
         version: 19.2.8(react@19.2.8)
 
+  web-e2e: {}
+
 packages:
 
   /@angular-devkit/core@19.2.24:

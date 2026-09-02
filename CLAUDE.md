@@ -263,6 +263,15 @@ than `main`.
 
 `nx affected` in CI needs `fetch-depth: 0` and `nrwl/nx-set-shas`.
 
+**`web-e2e` was missing from `pnpm-workspace.yaml`.** It was a project only
+because the Playwright plugin inferred one from `playwright.config.mts`, so its
+`package.json` was never read: no `nx.targets`, no `implicitDependencies`, no
+graph edges. Anything configured there was silently ignored, and its `e2e`
+target ran with no dependencies — passing locally only because `api/dist`
+happened to exist from an earlier build. It is now a workspace package, and
+`nx.json` excludes it from `@nx/playwright` so its explicit target stands, in
+the same way `api-e2e` is excluded from `@nx/jest`.
+
 **Both e2e suites start their own servers on dedicated ports** (3100/3101 for
 web-e2e, 3102 for api-e2e) and stop them by pid. Neither depends on
 `@pistis/api:serve`: that target is continuous, so its lifetime overlaps
