@@ -22,7 +22,20 @@ module.exports = (_env, argv) => {
      * decorator metadata — so mangling names does not shrink the bundle, it
      * breaks it.
      */
-    optimization: { minimize: false },
+    optimization: {
+      minimize: false,
+      /*
+       * Do not substitute `process.env.NODE_ENV`. `mode: 'production'` otherwise
+       * inlines it as a literal, and every `process.env.NODE_ENV === 'production'`
+       * in the source is constant-folded — the dev seed's guard compiled to
+       * `if (true)`, so it refused to seed whatever the server was actually run
+       * with, and web-e2e could never sign in against a fresh database.
+       *
+       * For a server bundle NODE_ENV is a deployment-time value, not a
+       * build-time one.
+       */
+      nodeEnv: false,
+    },
 
     output: {
       path: join(__dirname, 'dist'),
