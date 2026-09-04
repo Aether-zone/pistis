@@ -24,7 +24,9 @@ WORKDIR /workspace
 
 # Manifests first: this layer is what pnpm resolves against, so it is only
 # invalidated when a dependency changes, not on every source edit.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# No .npmrc: both @aether-zone packages are on npm, which is the default
+# registry, so the build needs no scope mapping and no token.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY api/package.json api/
 COPY contract/package.json contract/
 COPY web/package.json web/

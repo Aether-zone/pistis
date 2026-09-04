@@ -20,7 +20,9 @@ RUN corepack enable
 
 WORKDIR /workspace
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+# No .npmrc: both @aether-zone packages are on npm, which is the default
+# registry, so the build needs no scope mapping and no token.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY api/package.json api/
 COPY contract/package.json contract/
 COPY web/package.json web/
