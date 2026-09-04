@@ -59,5 +59,3 @@ Thumbs.db
 out
 
 test-output
-# npm auth (contains a GitHub PAT for the @aether-zone registry)
-.npmrc

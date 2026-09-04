@@ -20,9 +20,11 @@ RUN corepack enable
 
 WORKDIR /workspace
 
-# No .npmrc: both @aether-zone packages are on npm, which is the default
-# registry, so the build needs no scope mapping and no token.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# `.npmrc` carries no credentials any more — both @aether-zone packages are
+# on npm, the default registry — but it still sets `auto-install-peers`,
+# which the lockfile records. Building without it resolves differently
+# from the lockfile and `pnpm deploy` fails.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY api/package.json api/
 COPY contract/package.json contract/
 COPY web/package.json web/

@@ -24,9 +24,11 @@ WORKDIR /workspace
 
 # Manifests first: this layer is what pnpm resolves against, so it is only
 # invalidated when a dependency changes, not on every source edit.
-# No .npmrc: both @aether-zone packages are on npm, which is the default
-# registry, so the build needs no scope mapping and no token.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# `.npmrc` carries no credentials any more — both @aether-zone packages are
+# on npm, the default registry — but it still sets `auto-install-peers`,
+# which the lockfile records. Building without it resolves differently
+# from the lockfile and `pnpm deploy` fails.
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY api/package.json api/
 COPY contract/package.json contract/
 COPY web/package.json web/
