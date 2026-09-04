@@ -5,10 +5,10 @@
 # Build from the repository root, not from api/:
 #   docker build -f api/Dockerfile -t aether-zone/pistis-api .
 #
-# The webpack bundle leaves better-sqlite3, bcrypt and typeorm external, so the
-# image needs real installed copies of them. They are installed in the builder,
-# which has a toolchain for the native ones, and copied into a runtime image on
-# the same base so the compiled bindings match.
+# The webpack bundle leaves everything under node_modules external, so the image
+# needs real installed copies of the api's dependencies. They are installed in
+# the builder, which has a toolchain for the native ones, and copied into a
+# runtime image on the same base so the compiled bindings match.
 
 FROM node:22-bookworm-slim AS builder
 
@@ -24,6 +24,10 @@ WORKDIR /workspace
 
 # Manifests first: this layer is what pnpm resolves against, so it is only
 # invalidated when a dependency changes, not on every source edit.
+# `.npmrc` carries no credentials any more — both @aether-zone packages are
+# on npm, the default registry — but it still sets `auto-install-peers`,
+# which the lockfile records. Building without it resolves differently
+# from the lockfile and `pnpm deploy` fails.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY api/package.json api/
 COPY contract/package.json contract/
@@ -35,13 +39,13 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# `prune` builds the app, then writes api/dist/package.json and a matching
-# lockfile carrying only what the bundle still needs at runtime, with
-# @pistis/contract rewritten to a file: reference under workspace_modules.
-RUN pnpm exec nx prune @pistis/api
+RUN pnpm --filter @pistis/api build
 
-WORKDIR /workspace/api/dist
-RUN pnpm install --prod --frozen-lockfile
+# `pnpm deploy` is what replaced `nx prune`: it resolves the api's production
+# dependencies out of the workspace lockfile and writes a self-contained
+# directory, node_modules and all. better-sqlite3 and bcrypt are compiled here,
+# where a toolchain exists.
+RUN pnpm deploy --filter @pistis/api --prod /deploy
 
 
 FROM node:22-bookworm-slim AS runner
@@ -58,6 +62,10 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
+# node_modules first, then the bundle on top of it — the deploy directory also
+# carries the api's source, which the runtime has no use for.
+COPY --from=builder --chown=node:node /deploy/node_modules ./node_modules
+COPY --from=builder --chown=node:node /deploy/package.json ./package.json
 COPY --from=builder --chown=node:node /workspace/api/dist ./
 
 # SQLite lives outside the image; without a volume here the database is lost

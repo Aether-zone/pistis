@@ -1,3 +1,22 @@
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Card,
+  Checkbox,
+  Field,
+  Heading,
+  Input,
+  Label,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@aether-zone/kosmos';
 import type { AdminUserDTO } from '@pistis/contract';
 import { redirect } from 'next/navigation';
 
@@ -6,20 +25,13 @@ import { ActionForm, SubmitButton } from '../action-form';
 import { createUser, setPassword } from '../actions';
 import styles from '../dashboard.module.css';
 import { Notice } from '../notice';
+import { Yes } from '../yes';
 
 export const metadata = { title: 'Users' };
 export const dynamic = 'force-dynamic';
 
 function when(value: Date | string): string {
   return new Date(value).toISOString().replace('T', ' ').slice(0, 16);
-}
-
-function Yes({ value }: { value: boolean }) {
-  return (
-    <span className={`${styles.badge} ${value ? styles.yes : styles.no}`}>
-      {value ? 'yes' : 'no'}
-    </span>
-  );
 }
 
 export default async function UsersPage({
@@ -35,7 +47,11 @@ export default async function UsersPage({
   }
 
   if (!result.ok) {
-    return <p className={styles.error} role="alert">{result.message}</p>;
+    return (
+      <Alert variant="destructive">
+        <AlertDescription>{result.message}</AlertDescription>
+      </Alert>
+    );
   }
 
   const userList = result.data;
@@ -43,110 +59,124 @@ export default async function UsersPage({
   return (
     <>
       <Notice notice={notice} />
-    <section className={styles.section}>
-      <div className={styles.sectionHead}>
-        <h2>Users</h2>
-        <span className={styles.count}>{userList.length}</span>
-      </div>
 
-      <div className={styles.scroller}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Email</th>
-              <th>Name</th>
-              <th>Admin</th>
-              <th>Password set</th>
-              <th>Created</th>
-              <th>Reset password</th>
-            </tr>
-          </thead>
-          <tbody>
-            {userList.map((user) => (
-              <tr key={user.id}>
-                <td className={styles.mono}>{user.email}</td>
-                <td>{user.name}</td>
-                <td>
-                  <Yes value={user.admin} />
-                </td>
-                <td>
-                  <Yes value={user.hasPassword} />
-                </td>
-                <td>{when(user.createdAt)}</td>
-                <td>
-                  <ActionForm
-                    action={setPassword}
-                    className={styles.inlineForm}
-                  >
-                    <input type="hidden" name="userId" value={user.id} />
-                    <input
-                      className={styles.input}
-                      name="password"
-                      type="password"
-                      placeholder="New password"
-                      minLength={12}
-                      required
-                      aria-label={`New password for ${user.email}`}
-                    />
-                    <SubmitButton pendingLabel="Setting…">Set</SubmitButton>
-                  </ActionForm>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <Heading level={2} size="heading-small">
+            Users
+          </Heading>
+          <Badge variant="outline" size="sm">
+            {userList.length}
+          </Badge>
+        </div>
 
-      <details className={styles.details}>
-        <summary className={styles.summary}>Create a user</summary>
-        <ActionForm action={createUser} className={styles.form}>
-          <label className={styles.field} htmlFor="userName">
-                <span className={styles.label}>Name</span>
-                <input
-                  className={styles.input}
-                  id="userName"
-                  name="name"
-                  required
-                />
-              </label>
-              <label className={styles.field} htmlFor="userEmail">
-                <span className={styles.label}>Email</span>
-                <input
-                  className={styles.input}
-                  id="userEmail"
-                  name="email"
-                  type="email"
-                  required
-                />
-              </label>
-              <label className={styles.field} htmlFor="userPassword">
-                <span className={styles.label}>
-                  Password (12 characters or more)
-                </span>
-                <input
-                  className={styles.input}
-                  id="userPassword"
-                  name="password"
-                  type="password"
-                  minLength={12}
-                  required
-                />
-              </label>
-              <div className={styles.field}>
-                <span className={styles.label}>Role</span>
-                <label className={styles.check}>
-                  <input type="checkbox" name="admin" />
-                  <span>Administrator</span>
-                </label>
-              </div>
-          <div className={styles.span}>
-            <SubmitButton variant="primary" pendingLabel="Creating…">
-              Create user
-            </SubmitButton>
-          </div>
-        </ActionForm>
-      </details>
-    </section>
+        <Card>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Admin</TableHead>
+                <TableHead>Password set</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead>Reset password</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userList.length === 0 ? (
+                <TableRow>
+                  <TableEmpty colSpan={6}>No users yet.</TableEmpty>
+                </TableRow>
+              ) : (
+                userList.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className={styles.mono}>{user.email}</TableCell>
+                    <TableCell>{user.name}</TableCell>
+                    <TableCell>
+                      <Yes value={user.admin} />
+                    </TableCell>
+                    <TableCell>
+                      <Yes value={user.hasPassword} />
+                    </TableCell>
+                    <TableCell>{when(user.createdAt)}</TableCell>
+                    <TableCell>
+                      <ActionForm
+                        action={setPassword}
+                        className={styles.inlineForm}
+                      >
+                        <input type="hidden" name="userId" value={user.id} />
+                        <Input
+                          name="password"
+                          type="password"
+                          size="sm"
+                          placeholder="New password"
+                          minLength={12}
+                          required
+                          aria-label={`New password for ${user.email}`}
+                        />
+                        <SubmitButton pendingLabel="Setting…">Set</SubmitButton>
+                      </ActionForm>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+
+        <details className={styles.details}>
+          <summary className={styles.summary}>Create a user</summary>
+          <ActionForm action={createUser} className={styles.form}>
+            <Field>
+              <Label htmlFor="userName">Name</Label>
+              <Input id="userName" name="name" size="sm" required />
+            </Field>
+
+            <Field>
+              <Label htmlFor="userEmail">Email</Label>
+              <Input
+                id="userEmail"
+                name="email"
+                type="email"
+                size="sm"
+                required
+              />
+            </Field>
+
+            <Field>
+              <Label htmlFor="userPassword">
+                Password (12 characters or more)
+              </Label>
+              <Input
+                id="userPassword"
+                name="password"
+                type="password"
+                size="sm"
+                minLength={12}
+                required
+              />
+            </Field>
+
+            <Field>
+              <Text size="label" weight="semibold">
+                Role
+              </Text>
+              <Label className={styles.check}>
+                <Checkbox name="admin" />
+                <Text as="span" size="body-small">
+                  Administrator
+                </Text>
+              </Label>
+            </Field>
+
+            <div className={styles.span}>
+              <SubmitButton variant="primary" pendingLabel="Creating…">
+                Create user
+              </SubmitButton>
+            </div>
+          </ActionForm>
+        </details>
+      </section>
     </>
   );
 }

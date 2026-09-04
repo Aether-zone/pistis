@@ -42,7 +42,7 @@ testem.log
 !.env.example
 
 # Local SQLite databases. TypeORM writes one to the working directory, which is
-# the workspace root under `nx serve`.
+# the api project root when it is started with `pnpm --filter @pistis/api serve`.
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
@@ -51,9 +51,6 @@ testem.log
 .DS_Store
 Thumbs.db
 
-.nx/cache
-.nx/workspace-data
-.nx/migrate-runs
 .claude/worktrees
 .claude/settings.local.json
 

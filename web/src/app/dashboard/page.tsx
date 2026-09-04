@@ -1,3 +1,10 @@
+import {
+  Card,
+  CardContent,
+  EmptyState,
+  Heading,
+  Text,
+} from '@aether-zone/kosmos';
 import type {
   AdminClientDTO,
   AdminTokenDTO,
@@ -89,24 +96,35 @@ export default async function OverviewPage({
       <Notice notice={notice} />
 
       <div className={styles.sectionHead}>
-        <h2>Overview</h2>
-      </div>
-
-      <div className={styles.tiles}>
-        {tiles.map((tile) => (
-          <Link className={styles.tile} href={tile.href} key={tile.href}>
-            <span className={styles.tileValue}>{tile.value}</span>
-            <span className={styles.tileLabel}>{tile.label}</span>
-            {tile.hint ? (
-              <span className={styles.tileHint}>{tile.hint}</span>
-            ) : null}
-          </Link>
-        ))}
+        <Heading level={2} size="heading-small">
+          Overview
+        </Heading>
       </div>
 
       {tiles.length === 0 ? (
-        <p className={styles.empty}>Nothing to show yet.</p>
-      ) : null}
+        <EmptyState bordered title="Nothing to show yet." />
+      ) : (
+        <div className={styles.tiles}>
+          {tiles.map((tile) => (
+            // The Link is the card, so the whole tile is the hit area.
+            <Link className={styles.tileLink} href={tile.href} key={tile.href}>
+              <Card className={styles.tile}>
+                <CardContent className={styles.tileBody}>
+                  <span className={styles.tileValue}>{tile.value}</span>
+                  <Text size="body-small" weight="semibold">
+                    {tile.label}
+                  </Text>
+                  {tile.hint ? (
+                    <Text size="body-small" tone="muted">
+                      {tile.hint}
+                    </Text>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </>
   );
 }

@@ -10,7 +10,7 @@ the issuer origin.
 
 ```sh
 cp .env.example .env
-npx nx serve @pistis/api
+pnpm start:server
 ```
 
 ## Endpoints
@@ -255,7 +255,7 @@ there is no user behind it.
 
 Read from `api/.env` by `main.ts` through Node's own `process.loadEnvFile`, so
 no dotenv dependency is involved. Variables already set in the environment win,
-which means `PORT=3005 npx nx serve @pistis/api` still overrides the file.
+which means `PORT=3005 pnpm start:server` still overrides the file.
 
 | Variable | Default | |
 | --- | --- | --- |
@@ -303,8 +303,8 @@ wires it together. `src/organization/` is the cleanest example.
 ## Testing
 
 ```sh
-npx nx test @pistis/api
-npx nx test @pistis/api -- -t "rejects algorithm confusion"
+pnpm --filter @pistis/api test
+pnpm --filter @pistis/api test -- -t "rejects algorithm confusion"
 ```
 
 Specs boot a real Nest application against an in-memory SQLite database and
@@ -314,8 +314,8 @@ rather than mocked.
 ## Notes
 
 Persistence uses `synchronize: true` and writes `db.sqlite` to the working
-directory — the workspace root under `nx serve`. There are no migrations; the
-schema follows the entity decorators.
+directory — the workspace root under `pnpm start:server`. There are no
+migrations; the schema follows the entity decorators.
 
 `CLAUDE.md` at the repository root explains the decisions that are not obvious
 from the code, including why the database still holds a row per JWT.

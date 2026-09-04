@@ -20,6 +20,10 @@ RUN corepack enable
 
 WORKDIR /workspace
 
+# `.npmrc` carries no credentials any more — both @aether-zone packages are
+# on npm, the default registry — but it still sets `auto-install-peers`,
+# which the lockfile records. Building without it resolves differently
+# from the lockfile and `pnpm deploy` fails.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY api/package.json api/
 COPY contract/package.json contract/
@@ -33,11 +37,13 @@ COPY . .
 
 # One install, both builds — the reason this image is cheaper to build than the
 # two separate ones run back to back.
-RUN pnpm exec nx run-many -t build -p @pistis/api @pistis/web \
-    && pnpm exec nx prune @pistis/api
+RUN pnpm --filter @pistis/api --filter @pistis/web build
 
-WORKDIR /workspace/api/dist
-RUN pnpm install --prod --frozen-lockfile
+# `pnpm deploy` is what replaced `nx prune`: it resolves the api's production
+# dependencies out of the workspace lockfile and writes a self-contained
+# directory, node_modules and all. The web app carries its own through Next's
+# standalone output.
+RUN pnpm deploy --filter @pistis/api --prod /deploy
 
 
 FROM node:22-bookworm-slim AS runner
@@ -53,6 +59,8 @@ ENV NODE_ENV=production \
 
 WORKDIR /app
 
+COPY --from=builder --chown=node:node /deploy/node_modules ./api/node_modules
+COPY --from=builder --chown=node:node /deploy/package.json ./api/package.json
 COPY --from=builder --chown=node:node /workspace/api/dist ./api/
 COPY --from=builder --chown=node:node /workspace/web/.next/standalone ./web/
 COPY --from=builder --chown=node:node /workspace/web/.next/static ./web/web/.next/static

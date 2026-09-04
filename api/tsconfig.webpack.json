@@ -1,0 +1,24 @@
+{
+  /*
+   * The tsconfig ts-loader compiles against — `tsconfig.app.json` describes the
+   * *typecheck* build, which is a different job.
+   *
+   * Two settings have to differ. `rootDir` reaches up to the workspace root
+   * because `@pistis/contract` is consumed as TypeScript source and so is
+   * compiled into this bundle; with `rootDir: "src"` every contract file is a
+   * TS6059 error. And the declaration/composite emit is switched off: webpack
+   * wants JavaScript, and `tsc --build` is what produces the .d.ts files.
+   */
+  "extends": "./tsconfig.app.json",
+  "compilerOptions": {
+    "rootDir": "..",
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "tsBuildInfoFile": null
+  },
+  "include": ["src/**/*.ts", "../contract/src/**/*.ts"],
+  "references": []
+}

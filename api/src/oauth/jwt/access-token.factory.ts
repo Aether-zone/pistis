@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { formatScope, type AccessTokenClaimsDTO } from "@pistis/contract";
+import { formatScope, type AccessTokenClaimsDTO, type OrganizationMembershipClaim } from "@pistis/contract";
 import { randomUUID } from "crypto";
 
 import { OAuthException } from "../oauth.error";
@@ -19,6 +19,12 @@ export interface MintAccessTokenRequest {
     /** Null for the client credentials grant, where the client is its own subject. */
     userId: string | null;
     scopes: string[];
+    /**
+     * The subject's organizations and roles, when the `organizations` scope was
+     * granted. Resolved by `TokenService`; omitted for the client credentials
+     * grant, where the subject is a client and belongs to nothing.
+     */
+    organizations?: Record<string, OrganizationMembershipClaim>;
 }
 
 /** Mints and validates RFC 9068 JWT access tokens. */
@@ -46,7 +52,11 @@ export class AccessTokenFactory {
             iat: Math.floor(issuedAt.getTime() / 1000),
             jti,
             client_id: request.clientId,
-            scope: formatScope(request.scopes)
+            scope: formatScope(request.scopes),
+            // Omitted rather than sent empty: a token with no `orgs` and one for
+            // someone who belongs to nothing are different things, and only the
+            // first should let a resource server fall back to asking.
+            ...(request.organizations && { orgs: request.organizations })
         };
 
         return {

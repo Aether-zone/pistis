@@ -15,6 +15,10 @@ RUN corepack enable
 
 WORKDIR /workspace
 
+# `.npmrc` carries no credentials any more — both @aether-zone packages are
+# on npm, the default registry — but it still sets `auto-install-peers`,
+# which the lockfile records. Building without it resolves differently
+# from the lockfile and `pnpm deploy` fails.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY api/package.json api/
 COPY contract/package.json contract/
@@ -31,7 +35,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
-RUN pnpm exec nx build @pistis/web
+RUN pnpm --filter @pistis/web build
 
 
 FROM node:22-bookworm-slim AS runner
