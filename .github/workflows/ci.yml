@@ -22,9 +22,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          # nx affected compares against a base commit, which needs history.
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -35,15 +32,13 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Derives the SHAs nx affected compares against: the last successful run
-      # on main, rather than the previous commit.
-      - uses: nrwl/nx-set-shas@v4
+      - run: pnpm lint
 
-      # TypeScript project references are generated. A stale one means the
-      # committed tsconfigs disagree with the dependency graph.
-      - run: pnpm exec nx sync:check
+      - run: pnpm typecheck
 
-      - run: pnpm exec nx affected -t lint typecheck test build --parallel=3
+      - run: pnpm test
+
+      - run: pnpm build
 
   e2e:
     name: End-to-end
@@ -55,8 +50,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -70,9 +63,9 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
 
-      - uses: nrwl/nx-set-shas@v4
-
-      - run: pnpm exec nx affected -t e2e --parallel=1
+      # Each suite builds what it needs first; they run in series because both
+      # bind ports on the runner.
+      - run: pnpm e2e
 
       - uses: actions/upload-artifact@v4
         if: failure()

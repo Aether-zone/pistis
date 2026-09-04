@@ -2,23 +2,9 @@
   "name": "@pistis/web-e2e",
   "version": "0.0.1",
   "private": true,
-  "nx": {
-    "implicitDependencies": [
-      "@pistis/web",
-      "@pistis/api"
-    ],
-    "targets": {
-      "e2e": {
-        "executor": "nx:run-commands",
-        "dependsOn": [
-          "@pistis/api:build",
-          "@pistis/web:build"
-        ],
-        "options": {
-          "cwd": "web-e2e",
-          "command": "playwright test"
-        }
-      }
-    }
+  "scripts": {
+    "typecheck": "tsc --build tsconfig.json --emitDeclarationOnly",
+    "lint": "eslint .",
+    "e2e": "pnpm --filter @pistis/api --filter @pistis/web build && playwright test"
   }
 }

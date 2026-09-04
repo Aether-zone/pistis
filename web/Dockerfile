@@ -31,7 +31,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 COPY . .
 
-RUN pnpm exec nx build @pistis/web
+RUN pnpm --filter @pistis/web build
 
 
 FROM node:22-bookworm-slim AS runner

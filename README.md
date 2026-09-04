@@ -28,8 +28,8 @@ Both apps default to port 3000, so one of them has to move. The example files
 put the api on 3001 and expect the web app on 3002:
 
 ```sh
-npx nx serve @pistis/api          # http://localhost:3001/api
-PORT=3002 npx nx dev @pistis/web  # http://localhost:3002
+pnpm start:server   # http://localhost:3001/api
+pnpm start:web      # http://localhost:3002
 ```
 
 A fresh database has no accounts, and nothing in the app can create the first
@@ -48,31 +48,36 @@ tokens and your organizations.
 
 ## Commands
 
-Projects are addressed by their scoped name; Nx also accepts the bare directory
-name (`api`).
+This is a plain pnpm workspace: every project owns its own scripts, and the
+root ones fan out across them with `pnpm -r`. Projects are addressed by their
+scoped name.
 
 ```sh
-npx nx serve @pistis/api            # api, watch mode
-npx nx dev @pistis/web              # web, watch mode
-npx nx build @pistis/api            # webpack -> api/dist
+pnpm start:server                    # api, watch mode (rebuild + restart)
+pnpm start:web                       # web, watch mode
 
-npx nx test @pistis/api             # jest
-npx nx lint @pistis/api
-npx nx typecheck @pistis/contract
+pnpm lint                            # every project
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm e2e                             # builds first, then both e2e suites
 
-npx nx run-many -t lint typecheck test build   # everything
-npx nx affected -t lint test build             # only what changed
+pnpm --filter @pistis/api build      # webpack -> api/dist
+pnpm --filter @pistis/api test       # jest
+pnpm --filter @pistis/api lint
+pnpm --filter @pistis/contract typecheck
 ```
 
 A single test, or a single file:
 
 ```sh
-npx nx test @pistis/api -- -t "revokes the issued tokens when a code is replayed"
-npx nx test @pistis/api -- src/oauth/pkce.spec.ts
+pnpm --filter @pistis/api test -- -t "revokes the issued tokens when a code is replayed"
+pnpm --filter @pistis/api test -- src/oauth/pkce.spec.ts
 ```
 
-TypeScript project references are maintained by Nx. After adding an import that
-crosses a project boundary, run `npx nx sync` (`npx nx sync:check` in CI).
+TypeScript project references are maintained by hand. After adding an import
+that crosses a project boundary, add the matching `references` entry to the
+importing project's tsconfig; `pnpm typecheck` fails if it is missing.
 
 ## How the pieces fit
 
@@ -143,9 +148,8 @@ key generated at boot and do not survive a restart.
 
 ## Continuous integration
 
-`.github/workflows/ci.yml` runs `nx affected` for lint, typecheck, test and
-build on every push and pull request, then the end-to-end suites, and checks
-that the generated TypeScript project references are committed in sync.
+`.github/workflows/ci.yml` runs lint, typecheck, test and build on every push
+and pull request, then the end-to-end suites.
 
 `.github/workflows/docker.yml` builds all three images and publishes them to
 GHCR **when a release is published**, tagged with the release version

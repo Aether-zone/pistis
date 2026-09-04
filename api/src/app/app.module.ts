@@ -13,8 +13,8 @@ import { OrganizationModule } from '../organization/organization.module';
     TypeOrmModule.forRoot({
       type: 'better-sqlite3',
       // Relative to the working directory by default, which is the workspace
-      // root under `nx serve`. Containers set this to a mounted path, since
-      // anything written inside the image is lost on restart.
+      // root under `pnpm start:server`. Containers set this to a mounted path,
+      // since anything written inside the image is lost on restart.
       database: process.env.DATABASE_PATH ?? 'db.sqlite',
       autoLoadEntities: true,
       synchronize: true

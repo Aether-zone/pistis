@@ -5,6 +5,7 @@ import {
     type AddMembershipDTO,
     type MembershipDTO,
     type MembershipRole,
+    type OrganizationMembershipClaim,
     type PageRequestDTO,
     type UserDTO
 } from "@pistis/contract";
@@ -123,6 +124,48 @@ export class MembershipService {
             memberships.map((membership) => [
                 membership.organizationId,
                 membership.role as MembershipRole
+            ])
+        );
+    }
+
+    /**
+     * The same memberships, with each organization's name and slug — the shape
+     * the `orgs` access token claim takes.
+     *
+     * One join rather than {@link getRolesOf} followed by a lookup per row: this
+     * runs on every token issue, refreshes included, so it is on the hot path of
+     * every client's hourly refresh.
+     */
+    async getMembershipClaimsOf(
+        userId: string
+    ): Promise<Record<string, OrganizationMembershipClaim>> {
+        const rows: Array<{
+            organizationId: string;
+            role: string;
+            name: string;
+            slug: string;
+        }> = await this.membershipRepository
+            .createQueryBuilder('membership')
+            .innerJoin(
+                Organization,
+                'organization',
+                'organization.id = membership.organizationId'
+            )
+            .select('membership.organization_id', 'organizationId')
+            .addSelect('membership.role', 'role')
+            .addSelect('organization.name', 'name')
+            .addSelect('organization.slug', 'slug')
+            .where('membership.user_id = :userId', { userId })
+            .getRawMany();
+
+        return Object.fromEntries(
+            rows.map((row) => [
+                row.organizationId,
+                {
+                    role: row.role as MembershipRole,
+                    name: row.name,
+                    slug: row.slug
+                }
             ])
         );
     }
