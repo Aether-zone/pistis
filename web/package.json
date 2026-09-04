@@ -15,7 +15,7 @@
     "@aether-zone/organon": "^0.2.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/passport": "^11.0.0",
-    "@pistis/contract": "*",
+    "@pistis/contract": "workspace:*",
     "next": "~16.1.6",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
