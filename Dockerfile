@@ -9,7 +9,7 @@
 # where you can: they scale, restart and roll out independently. This one is for
 # a single-container host, and both processes share its fate.
 
-FROM node:22-bookworm-slim AS builder
+FROM node:26-bookworm-slim AS builder
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
@@ -40,7 +40,7 @@ WORKDIR /workspace/api/dist
 RUN pnpm install --prod --frozen-lockfile
 
 
-FROM node:22-bookworm-slim AS runner
+FROM node:26-bookworm-slim AS runner
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends dumb-init \
