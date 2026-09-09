@@ -78,7 +78,7 @@ jobs:
             # pulling it does not hand someone unreleased code.
             type=raw,value=latest,enable=${{ github.event_name == 'release' && github.event.release.prerelease == false }}
 
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           # The build context is the repository root for all three: the images
           # build from a pnpm workspace and need the lockfile and every manifest.
