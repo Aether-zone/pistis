@@ -167,7 +167,7 @@ Convergence cannot repair a client *secret*, which is hashed and cannot be read 
 
 It is a development affordance, not a provisioning story — a real one still wants an authenticated admin API.
 
-Clients are otherwise **not** registerable over HTTP — unauthenticated client registration would be a hole. Provision them through the exported `ClientService.register(...)`:
+Clients are **not** registerable *unauthenticated* — open client registration would be a hole. An admin registers one from the dashboard, or through the exported `ClientService.register(...)`:
 
 ```ts
 await app.get(ClientService).register({
@@ -179,6 +179,33 @@ await app.get(ClientService).register({
   scopes: ['profile', 'email'],
 });
 ```
+
+**A client that acts with no person behind it can be bound to an organization**,
+and needs to be if it is to reach anything. A client credentials token has no
+subject and so no memberships, which means an unbound one carries no `orgs`
+claim and every organization-scoped route in the workspace refuses it. The
+binding is a *grant* rather than a membership — there is no membership row to
+read a role from, so it is stored beside the id:
+
+```ts
+await app.get(ClientService).register({
+  clientId: 'reporting',
+  clientSecret: 's3cret',
+  name: 'Reporting',
+  redirectUris: [],              // no browser in this flow to send anywhere
+  grantTypes: ['client_credentials'],
+  scopes: ['organizations'],     // required alongside a binding, or it is refused
+  organization: { id: organizationId, role: 'member' },
+});
+```
+
+Redirect URIs are required only for the authorization code grant, which is the
+one that has a browser to send back — so a service client needs none.
+
+**There is no way to change a binding, or a client's scopes, after
+registration.** The management API offers create, delete and rotate-secret and
+nothing else, so correcting a mistyped organization means deleting the client and
+registering it again, which issues a new secret.
 
 ### `api/src/organization/` — the reference feature module
 
