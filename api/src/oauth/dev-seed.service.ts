@@ -12,6 +12,22 @@ export const DEV_SEED_EMAIL = 'demo@example.com';
 export const DEV_SEED_PASSWORD = 'demo-password';
 
 /**
+ * mneme's own client, for the work that has no person behind it.
+ *
+ * A second seeded client rather than more scopes on the first, because it is a
+ * different *kind* of client: no redirect, no consent, no resource owner. It
+ * signs in as itself with the client credentials grant to read objects out of
+ * loculus and index what it finds — which is why it holds `objects:read:any`,
+ * the scope that lets a service read a file another client uploaded.
+ *
+ * Every other service borrows the caller's token and needs no registration
+ * here. Add one the day another has work nobody is waiting on.
+ */
+export const DEV_SEED_SERVICE_CLIENT_ID = 'mneme';
+export const DEV_SEED_SERVICE_CLIENT_SECRET = 'mneme-secret';
+export const DEV_SEED_SERVICE_CLIENT_SCOPES = ['objects:read:any'];
+
+/**
  * Creates one client and one user so the authorization flow can be driven
  * immediately after a fresh start. Nothing else in the app can currently do
  * this: clients are only registerable in code, and `POST /api/users` has no way
@@ -50,13 +66,16 @@ export class DevSeedService implements OnApplicationBootstrap {
         const redirectUris: string[] = this.options.devSeedRedirectUris;
 
         await this.seedClient(redirectUris);
+        await this.seedServiceClient();
         await this.seedUser();
 
         this.logger.warn(
             `Dev seed active. client_id="${DEV_SEED_CLIENT_ID}" `
             + `client_secret="${DEV_SEED_CLIENT_SECRET}" `
             + `admin login="${DEV_SEED_EMAIL}" password="${DEV_SEED_PASSWORD}" `
-            + `redirect_uri=${redirectUris.join(', ')}`
+            + `redirect_uri=${redirectUris.join(', ')} `
+            + `service client_id="${DEV_SEED_SERVICE_CLIENT_ID}" `
+            + `client_secret="${DEV_SEED_SERVICE_CLIENT_SECRET}"`
         );
     }
 
@@ -72,6 +91,46 @@ export class DevSeedService implements OnApplicationBootstrap {
             redirectUris,
             grantTypes: ['authorization_code', 'refresh_token', 'client_credentials'],
             scopes: ['profile', 'email']
+        });
+    }
+
+    /**
+     * mneme's service client, converged rather than created once.
+     *
+     * The scopes are brought up to date on every boot for the same reason the
+     * account below is: a database seeded by an older build has the client but
+     * not a scope added since, and skipping it there leaves mneme unable to
+     * read anything — visible only as loculus answering 404 for every object,
+     * which is a long way from the cause.
+     *
+     * Converging cannot repair a *secret*, which is hashed and cannot be read
+     * back to compare. A client seeded with a different one keeps it, and the
+     * fix is to delete the client and restart.
+     */
+    private async seedServiceClient(): Promise<void> {
+        const existing = await this.clientService.findByClientId(
+            DEV_SEED_SERVICE_CLIENT_ID
+        );
+
+        if (existing) {
+            await this.clientService.grantScopes(
+                existing,
+                DEV_SEED_SERVICE_CLIENT_SCOPES
+            );
+
+            return;
+        }
+
+        await this.clientService.register({
+            clientId: DEV_SEED_SERVICE_CLIENT_ID,
+            // Confidential: the client credentials grant requires it, and a
+            // secret is the only thing standing between this and anybody.
+            clientSecret: DEV_SEED_SERVICE_CLIENT_SECRET,
+            name: 'mneme',
+            // None. There is no browser in this flow to send anywhere.
+            redirectUris: [],
+            grantTypes: ['client_credentials'],
+            scopes: DEV_SEED_SERVICE_CLIENT_SCOPES
         });
     }
 

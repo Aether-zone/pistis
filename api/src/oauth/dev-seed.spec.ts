@@ -1,16 +1,20 @@
 import { INestApplication, Logger } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { TypeOrmModule } from "@nestjs/typeorm";
+import { getRepositoryToken, TypeOrmModule } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
 
 import { AuthModule } from "../auth/auth.module";
 import { AuthService } from "../auth/auth.service";
 import { UserModule } from "../user/user.module";
+import { Client } from "./client/client";
 import { ClientService } from "./client/client.service";
 import {
     DevSeedService as DevSeedServiceRef,
     DEV_SEED_CLIENT_ID,
     DEV_SEED_EMAIL,
-    DEV_SEED_PASSWORD
+    DEV_SEED_PASSWORD,
+    DEV_SEED_SERVICE_CLIENT_ID,
+    DEV_SEED_SERVICE_CLIENT_SECRET
 } from "./dev-seed.service";
 import { UserService as UserServiceRef } from "../user/user.service";
 import { OAUTH_OPTIONS, oauthOptionsFromEnv, type OAuthOptions } from "./oauth.options";
@@ -99,6 +103,64 @@ describe('DevSeedService', () => {
         } finally {
             process.env.NODE_ENV = previous;
             error.mockRestore();
+            await app.close();
+        }
+    });
+
+    it('creates a service client that can sign in as itself', async () => {
+        const app: INestApplication = await bootWith({ OAUTH_DEV_SEED: 'true' });
+
+        try {
+            const clients = app.get(ClientService);
+            const client = await clients.loadClient(DEV_SEED_SERVICE_CLIENT_ID);
+
+            expect(client.scopes).toContain('objects:read:any');
+            // No browser in this flow, so nothing to redirect anywhere.
+            expect(client.redirectUris).toEqual([]);
+
+            // The grant it exists for. Anything else would leave mneme holding
+            // a credential it cannot spend.
+            expect(() => clients.assertGrantAllowed(client, 'client_credentials'))
+                .not.toThrow();
+
+            // Confidential, or `clientCredentialsGrant` refuses it outright —
+            // and the seeded secret has to be the one mneme is configured with.
+            await expect(
+                clients.authenticate(
+                    DEV_SEED_SERVICE_CLIENT_ID,
+                    DEV_SEED_SERVICE_CLIENT_SECRET
+                )
+            ).resolves.toMatchObject({ clientId: DEV_SEED_SERVICE_CLIENT_ID });
+        } finally {
+            await app.close();
+        }
+    });
+
+    it('grants a scope to a service client seeded before it existed', async () => {
+        const app: INestApplication = await bootWith({ OAUTH_DEV_SEED: 'true' });
+
+        try {
+            /*
+             * The older build's state: the client exists without the scope. A
+             * seeder that skipped it would leave mneme reading nothing, visible
+             * only as loculus answering 404 for every object.
+             */
+            const clients = app.get(ClientService);
+            const seeded = await clients.loadClient(DEV_SEED_SERVICE_CLIENT_ID);
+            const repository: Repository<Client> = app.get(
+                getRepositoryToken(Client)
+            );
+
+            // Through the repository, not the service: narrowing scopes is a
+            // revocation, and `grantScopes` deliberately cannot do it.
+            await repository.update({ id: seeded.id }, { scopes: [] });
+
+            await app.get(DevSeedServiceRef).onApplicationBootstrap();
+
+            const repaired = await clients.findByClientId(DEV_SEED_SERVICE_CLIENT_ID);
+
+            expect(repaired?.scopes).toContain('objects:read:any');
+        } finally {
             await app.close();
         }
     });

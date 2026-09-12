@@ -52,6 +52,15 @@ describe('describeScopes', () => {
             .toBe(true);
     });
 
+    /*
+     * The catalogue is what `ClientService.register` validates against, so a
+     * resource server's scope must be here before any client can hold it —
+     * loculus refuses to serve one object to another without this one.
+     */
+    it('knows the scope that lets a service read another client’s objects', () => {
+        expect(SUPPORTED_SCOPE_NAMES).toContain('objects:read:any');
+    });
+
     it('falls back rather than throwing on an unrecognised scope', () => {
         expect(describeScopes(['not-a-scope'])).toEqual([
             { name: 'not-a-scope', description: 'Unknown permission' }
