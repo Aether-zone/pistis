@@ -198,3 +198,21 @@
   background-position: right 0.5rem center;
   background-size: 0.75rem;
 }
+
+/* A client's colour, shown beside its value rather than instead of it. */
+.swatchCell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--kosmos-space-2, 0.5rem);
+}
+
+.swatch {
+  /* A border because a swatch the colour of the page would otherwise vanish,
+     and white is a legal choice here. */
+  border: 1px solid var(--kosmos-color-border, rgb(0 0 0 / 0.15));
+  border-radius: var(--kosmos-radius-sm, 0.25rem);
+  display: inline-block;
+  block-size: 1rem;
+  inline-size: 1rem;
+  flex: none;
+}

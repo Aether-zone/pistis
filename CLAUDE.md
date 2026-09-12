@@ -203,7 +203,7 @@ Redirect URIs are required only for the authorization code grant, which is the
 one that has a browser to send back — so a service client needs none.
 
 `PATCH /api/admin/clients/:clientId` changes a registered client — name,
-redirect URIs, grant types, scopes, binding. Absent fields are left alone, and
+redirect URIs, grant types, scopes, primary colour, binding. Absent fields are left alone, and
 `organization: null` removes a binding where absent keeps it. The clients screen
 edits the binding in place, since that is the field most likely to be wrong.
 

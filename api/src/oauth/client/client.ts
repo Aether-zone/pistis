@@ -1,4 +1,4 @@
-import { type MembershipRole } from "@pistis/contract";
+import { DEFAULT_CLIENT_PRIMARY_COLOR, type MembershipRole } from "@pistis/contract";
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity({
@@ -45,6 +45,20 @@ export class Client {
         type: 'simple-array'
     })
     scopes: string[];
+
+    /**
+     * The colour this client is shown in, as a six-digit hex value.
+     *
+     * Defaulted in the column as well as in the request schema, so a row written
+     * before this existed reads as the workspace's own blue rather than as null.
+     * A client without a colour is not a meaningful state — everything that
+     * renders one needs *some* colour — so this is not nullable.
+     */
+    @Column({
+        name: 'primary_color',
+        default: DEFAULT_CLIENT_PRIMARY_COLOR
+    })
+    primaryColor: string;
 
     /**
      * The organization this client acts in, for the client credentials grant.

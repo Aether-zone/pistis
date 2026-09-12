@@ -1,4 +1,8 @@
-import { createClientSchema, updateClientSchema } from './client-admin.js';
+import {
+    createClientSchema,
+    DEFAULT_CLIENT_PRIMARY_COLOR,
+    updateClientSchema
+} from './client-admin.js';
 
 const base = {
     clientId: 'my-client',
@@ -93,5 +97,48 @@ describe('changing a client', () => {
         // that sent one would otherwise believe it had been renamed.
         expect(updateClientSchema.parse({ clientId: 'renamed' }))
             .toEqual({});
+    });
+});
+
+describe('a client’s colour', () => {
+
+    const base = {
+        clientId: 'my-client',
+        name: 'My Client',
+        confidential: true,
+        redirectUris: [],
+        grantTypes: ['client_credentials' as const],
+        scopes: ['profile']
+    };
+
+    it('defaults to the workspace’s own blue', () => {
+        // kosmos's `--kosmos-color-primary`, so a client that expressed no
+        // preference looks like the workspace it belongs to.
+        expect(createClientSchema.parse(base).primaryColor)
+            .toBe(DEFAULT_CLIENT_PRIMARY_COLOR);
+    });
+
+    it('lowercases it, so one colour has one spelling', () => {
+        expect(createClientSchema.parse({ ...base, primaryColor: '#AABBCC' })
+            .primaryColor).toBe('#aabbcc');
+    });
+
+    it('needs the hash and six digits', () => {
+        for (const bad of ['2563eb', '#25', '#2563e', '#2563ebb', 'blue', '#12345g']) {
+            expect(createClientSchema.safeParse({ ...base, primaryColor: bad }).success)
+                .toBe(false);
+        }
+    });
+
+    it('refuses three-digit shorthand rather than expanding it', () => {
+        // `<input type="color">` always submits the long form, so accepting
+        // both would store two spellings of one colour for nobody's benefit.
+        expect(createClientSchema.safeParse({ ...base, primaryColor: '#abc' }).success)
+            .toBe(false);
+    });
+
+    it('can be changed on its own', () => {
+        expect(updateClientSchema.parse({ primaryColor: '#FF0000' }))
+            .toEqual({ primaryColor: '#ff0000' });
     });
 });

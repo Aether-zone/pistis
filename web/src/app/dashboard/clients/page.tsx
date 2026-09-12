@@ -2,8 +2,16 @@ import {
   Alert,
   AlertDescription,
   Badge,
+  Button,
   Card,
   Checkbox,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   Field,
   Heading,
   Input,
@@ -18,10 +26,11 @@ import {
   TableRow,
   Text,
 } from '@aether-zone/kosmos';
-import type {
-  AdminClientDTO,
-  OrganizationDTO,
-  Pageable,
+import {
+  DEFAULT_CLIENT_PRIMARY_COLOR,
+  type AdminClientDTO,
+  type OrganizationDTO,
+  type Pageable,
 } from '@pistis/contract';
 import { redirect } from 'next/navigation';
 
@@ -101,6 +110,7 @@ export default async function ClientsPage({
                 <TableHead>client_id</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Confidential</TableHead>
+                <TableHead>Colour</TableHead>
                 <TableHead>Redirect URIs</TableHead>
                 <TableHead>Grants</TableHead>
                 <TableHead>Scopes</TableHead>
@@ -111,7 +121,7 @@ export default async function ClientsPage({
             <TableBody>
               {clientList.length === 0 ? (
                 <TableRow>
-                  <TableEmpty colSpan={8}>
+                  <TableEmpty colSpan={9}>
                     No clients yet. Register one below — the authorization flow
                     needs one before it can start.
                   </TableEmpty>
@@ -125,6 +135,21 @@ export default async function ClientsPage({
                     <TableCell>{client.name}</TableCell>
                     <TableCell>
                       <Yes value={client.confidential} />
+                    </TableCell>
+                    <TableCell>
+                      {/* The value as well as the swatch: a colour nobody can
+                          read back is one nobody can match something else to,
+                          and two near-identical blues look the same in a 16px
+                          square. */}
+                      <span className={styles.swatchCell}>
+                        <span
+                          className={styles.swatch}
+                          style={{ backgroundColor: client.primaryColor }}
+                        />
+                        <span className={styles.mono}>
+                          {client.primaryColor}
+                        </span>
+                      </span>
                     </TableCell>
                     <TableCell className={`${styles.mono} ${styles.wrap}`}>
                       {client.redirectUris.join(' ')}
@@ -219,9 +244,23 @@ export default async function ClientsPage({
           </Table>
         </Card>
 
-        <details className={styles.details}>
-          <summary className={styles.summary}>Register a client</summary>
-          <ActionForm action={createClient} className={styles.form}>
+        {/* A dialog rather than the disclosure this was: registering a client
+            is a form with eight fields and a secret shown once at the end, and
+            a page that grows an inline form that long buries the table it
+            belongs to. */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="primary">Register a client</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Register a client</DialogTitle>
+              <DialogDescription>
+                The secret is generated here and shown once — it is stored
+                hashed and cannot be read back.
+              </DialogDescription>
+            </DialogHeader>
+            <ActionForm action={createClient} className={styles.form}>
             <Field>
               <Label htmlFor="clientId">client_id</Label>
               <Input id="clientId" name="clientId" size="sm" required />
@@ -250,6 +289,20 @@ export default async function ClientsPage({
                 size="sm"
                 defaultValue="profile email"
                 required
+              />
+            </Field>
+
+            <Field>
+              <Label htmlFor="primaryColor">Primary colour</Label>
+              {/* `type="color"` submits `#rrggbb` lowercased, which is exactly
+                  what the schema accepts — so there is no spelling to normalise
+                  and no free-text hex to get wrong. */}
+              <Input
+                id="primaryColor"
+                name="primaryColor"
+                type="color"
+                size="sm"
+                defaultValue={DEFAULT_CLIENT_PRIMARY_COLOR}
               />
             </Field>
 
@@ -310,13 +363,14 @@ export default async function ClientsPage({
               </Select>
             </Field>
 
-            <div className={styles.span}>
-              <SubmitButton variant="primary" pendingLabel="Registering…">
-                Register client
-              </SubmitButton>
-            </div>
-          </ActionForm>
-        </details>
+              <DialogFooter className={styles.span}>
+                <SubmitButton variant="primary" pendingLabel="Registering…">
+                  Register client
+                </SubmitButton>
+              </DialogFooter>
+            </ActionForm>
+          </DialogContent>
+        </Dialog>
       </section>
     </>
   );

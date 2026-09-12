@@ -99,6 +99,7 @@ export async function createClient(
       redirectUris: list(form, 'redirectUris'),
       grantTypes: form.getAll('grantTypes').map(String),
       scopes: list(form, 'scopes'),
+      primaryColor: text(form, 'primaryColor'),
       /*
        * Omitted entirely when no organization was picked. The field is
        * optional rather than nullable in the schema, so sending an empty
