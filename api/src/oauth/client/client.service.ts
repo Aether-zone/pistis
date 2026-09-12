@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType } from "@pistis/contract";
+import { formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType, type MembershipRole } from "@pistis/contract";
 import { Repository } from "typeorm";
 
 import { PasswordEncoder } from "../../user/password/password.encoder";
@@ -15,6 +15,13 @@ export interface ClientRegistration {
     redirectUris: string[];
     grantTypes: GrantType[];
     scopes: string[];
+    /**
+     * The organization this client acts in, with the role the grant carries.
+     *
+     * Only meaningful for the client credentials grant — see the column on
+     * {@link Client}. Omit for every client that acts on a person's behalf.
+     */
+    organization?: { id: string; role: MembershipRole };
 }
 
 /**
@@ -52,6 +59,25 @@ export class ClientService {
             );
         }
 
+        /*
+         * A binding without the scope would mint tokens whose `orgs` claim
+         * contradicts organon's contract, which says the claim is present only
+         * when `organizations` was granted — and a resource server may rely on
+         * that. Refused here rather than dropped silently at token time,
+         * because the mistake is made once at registration and the symptom
+         * would otherwise be 403s from every organization-scoped route with
+         * nothing to connect them to the cause.
+         */
+        if (
+            registration.organization &&
+            !registration.scopes.includes('organizations')
+        ) {
+            throw OAuthException.invalidScope(
+                `Client "${registration.clientId}" is bound to an organization, `
+                + 'so it must also be granted the "organizations" scope.'
+            );
+        }
+
         const client: Client = new Client();
         client.clientId = registration.clientId;
         client.clientSecret = registration.clientSecret
@@ -61,6 +87,8 @@ export class ClientService {
         client.redirectUris = registration.redirectUris;
         client.grantTypes = registration.grantTypes;
         client.scopes = registration.scopes;
+        client.organizationId = registration.organization?.id ?? null;
+        client.organizationRole = registration.organization?.role ?? null;
 
         return this.clientRepository.save(client);
     }

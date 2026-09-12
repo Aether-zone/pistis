@@ -188,6 +188,16 @@ export class OAuthService {
             clientId: client.clientId,
             userId: null,
             scopes: this.clientService.resolveScopes(client, request.scope),
+            /*
+             * The organization this client is registered to act in, where it
+             * has one. Without it a client credentials token belongs to no
+             * tenant and can reach no organization-scoped route in the
+             * workspace, which is most of them.
+             */
+            organization:
+                client.organizationId && client.organizationRole
+                    ? { id: client.organizationId, role: client.organizationRole }
+                    : null,
             // RFC 6749 §4.4.3: no refresh token for the client credentials grant.
             withRefreshToken: false
         });

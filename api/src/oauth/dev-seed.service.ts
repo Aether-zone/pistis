@@ -25,7 +25,15 @@ export const DEV_SEED_PASSWORD = 'demo-password';
  */
 export const DEV_SEED_SERVICE_CLIENT_ID = 'mneme';
 export const DEV_SEED_SERVICE_CLIENT_SECRET = 'mneme-secret';
-export const DEV_SEED_SERVICE_CLIENT_SCOPES = ['objects:read:any'];
+/**
+ * `organizations` alongside the object scope, because the client is bound to an
+ * organization below and a binding without that scope is refused: the claim it
+ * would produce contradicts what the scope announces.
+ */
+export const DEV_SEED_SERVICE_CLIENT_SCOPES = [
+    'objects:read:any',
+    'organizations'
+];
 
 /**
  * Creates one client and one user so the authorization flow can be driven

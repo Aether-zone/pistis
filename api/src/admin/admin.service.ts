@@ -56,7 +56,8 @@ export class AdminService {
             name: request.name,
             redirectUris: request.redirectUris,
             grantTypes: request.grantTypes,
-            scopes: request.scopes
+            scopes: request.scopes,
+            organization: request.organization
         });
 
         return { clientId: request.clientId, clientSecret: clientSecret ?? '' };
@@ -199,6 +200,15 @@ export class AdminService {
             redirectUris: client.redirectUris,
             grantTypes: client.grantTypes,
             scopes: client.scopes,
+            /*
+             * Null unless both columns are set. They are written together and
+             * a role without an organization means nothing, so a half-set pair
+             * is a row to disbelieve rather than to render.
+             */
+            organization:
+                client.organizationId && client.organizationRole
+                    ? { id: client.organizationId, role: client.organizationRole }
+                    : null,
             createdAt: client.createdAt,
             updatedAt: client.updatedAt
         };
