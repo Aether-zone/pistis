@@ -99,7 +99,7 @@ export default async function ClientsPage({
   const clientList = result.data;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <section className={styles.section}>
@@ -248,7 +248,11 @@ export default async function ClientsPage({
             belongs to. */}
         <Dialog>
           <DialogTrigger asChild>
-            <Button variant="primary">Register a client</Button>
+            {/* `.pageAction` because `.page` is a flex column: without it the
+                button stretched to the full width of the page. */}
+            <Button variant="primary" className={styles.pageAction}>
+              Register a client
+            </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -259,107 +263,110 @@ export default async function ClientsPage({
               </DialogDescription>
             </DialogHeader>
             <ActionForm action={createClient} className={styles.form}>
-            <Field>
-              <Label htmlFor="clientId">client_id</Label>
-              <Input id="clientId" name="clientId" size="sm" required />
-            </Field>
+              <Field>
+                <Label htmlFor="clientId">client_id</Label>
+                <Input id="clientId" name="clientId" size="sm" required />
+              </Field>
 
-            <Field>
-              <Label htmlFor="clientName">Name</Label>
-              <Input id="clientName" name="name" size="sm" required />
-            </Field>
+              <Field>
+                <Label htmlFor="clientName">Name</Label>
+                <Input id="clientName" name="name" size="sm" required />
+              </Field>
 
-            <Field>
-              <Label htmlFor="redirectUris">
-                Redirect URIs (space separated)
-              </Label>
-              {/* Not required: a client that only uses client credentials has
+              <Field>
+                <Label htmlFor="redirectUris">
+                  Redirect URIs (space separated)
+                </Label>
+                {/* Not required: a client that only uses client credentials has
                   no browser to send anywhere. The api enforces the real rule,
                   which is that the authorization code grant needs one. */}
-              <Input id="redirectUris" name="redirectUris" size="sm" />
-            </Field>
+                <Input id="redirectUris" name="redirectUris" size="sm" />
+              </Field>
 
-            <Field>
-              <Label htmlFor="scopes">Scopes (space separated)</Label>
-              <Input
-                id="scopes"
-                name="scopes"
-                size="sm"
-                defaultValue="profile email"
-                required
-              />
-            </Field>
+              <Field>
+                <Label htmlFor="scopes">Scopes (space separated)</Label>
+                <Input
+                  id="scopes"
+                  name="scopes"
+                  size="sm"
+                  defaultValue="profile email"
+                  required
+                />
+              </Field>
 
-            <Field>
-              <Label htmlFor="primaryColor">Primary colour</Label>
-              {/* `type="color"` submits `#rrggbb` lowercased, which is exactly
+              <Field>
+                <Label htmlFor="primaryColor">Primary colour</Label>
+                {/* `type="color"` submits `#rrggbb` lowercased, which is exactly
                   what the schema accepts — so there is no spelling to normalise
                   and no free-text hex to get wrong. */}
-              <Input
-                id="primaryColor"
-                name="primaryColor"
-                type="color"
-                size="sm"
-                defaultValue={PICKER_DEFAULT_COLOR}
-              />
-            </Field>
+                <Input
+                  id="primaryColor"
+                  name="primaryColor"
+                  type="color"
+                  size="sm"
+                  defaultValue={PICKER_DEFAULT_COLOR}
+                />
+              </Field>
 
-            <Field className={styles.span}>
-              {/* A group caption, not a label: it has no single control to
+              <Field className={styles.span}>
+                {/* A group caption, not a label: it has no single control to
                   point at, so it must not be a <label>. */}
-              <Text size="label" weight="semibold">
-                Grant types
-              </Text>
-              <div className={styles.checks}>
-                {GRANT_TYPES.map((grant) => (
-                  <Label className={styles.check} key={grant}>
-                    <Checkbox
-                      name="grantTypes"
-                      value={grant}
-                      defaultChecked={grant !== 'client_credentials'}
-                    />
-                    <span className={styles.mono}>{grant}</span>
+                <Text size="label" weight="semibold">
+                  Grant types
+                </Text>
+                <div className={styles.checks}>
+                  {GRANT_TYPES.map((grant) => (
+                    <Label className={styles.check} key={grant}>
+                      <Checkbox
+                        name="grantTypes"
+                        value={grant}
+                        defaultChecked={grant !== 'client_credentials'}
+                      />
+                      <span className={styles.mono}>{grant}</span>
+                    </Label>
+                  ))}
+                  <Label className={styles.check}>
+                    <Checkbox name="confidential" defaultChecked />
+                    <Text as="span" size="body-small">
+                      Confidential (issue a secret; public clients must use
+                      PKCE)
+                    </Text>
                   </Label>
-                ))}
-                <Label className={styles.check}>
-                  <Checkbox name="confidential" defaultChecked />
-                  <Text as="span" size="body-small">
-                    Confidential (issue a secret; public clients must use PKCE)
-                  </Text>
-                </Label>
-              </div>
-            </Field>
+                </div>
+              </Field>
 
-            <Field>
-              <Label htmlFor="organizationId">Organization</Label>
-              {/* For a client that acts with no person behind it. Its token
+              <Field>
+                <Label htmlFor="organizationId">Organization</Label>
+                {/* For a client that acts with no person behind it. Its token
                   otherwise belongs to no tenant, and every organization-scoped
                   route refuses it. Needs the `organizations` scope above. */}
-              <Select id="organizationId" name="organizationId" size="sm">
-                <option value="">None — acts for whoever signed in</option>
-                {organizationList.map((organization) => (
-                  <option key={organization.id} value={organization.id}>
-                    {organization.name}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+                <Select id="organizationId" name="organizationId" size="sm">
+                  <option value="">None — acts for whoever signed in</option>
+                  {organizationList.map((organization) => (
+                    <option key={organization.id} value={organization.id}>
+                      {organization.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
-            <Field>
-              <Label htmlFor="organizationRole">Role in that organization</Label>
-              <Select
-                id="organizationRole"
-                name="organizationRole"
-                size="sm"
-                defaultValue="member"
-              >
-                {ORGANIZATION_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </Select>
-            </Field>
+              <Field>
+                <Label htmlFor="organizationRole">
+                  Role in that organization
+                </Label>
+                <Select
+                  id="organizationRole"
+                  name="organizationRole"
+                  size="sm"
+                  defaultValue="member"
+                >
+                  {ORGANIZATION_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {role}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
 
               <DialogFooter className={styles.span}>
                 <SubmitButton variant="primary" pendingLabel="Registering…">
@@ -370,6 +377,6 @@ export default async function ClientsPage({
           </DialogContent>
         </Dialog>
       </section>
-    </>
+    </div>
   );
 }

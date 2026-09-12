@@ -1,6 +1,10 @@
 'use client';
 
-import { SidenavGroup, SidenavGroupLabel, SidenavItem } from '@aether-zone/kosmos';
+import {
+  SidenavGroup,
+  SidenavGroupLabel,
+  SidenavItem,
+} from '@aether-zone/kosmos';
 import { usePathname, useRouter } from 'next/navigation';
 import type { MouseEvent } from 'react';
 

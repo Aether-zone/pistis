@@ -113,26 +113,28 @@ export default async function OrganizationPage({
   ];
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
-      <Breadcrumbs className={styles.crumb}>
-        <BreadcrumbItem href="/dashboard/organizations">
-          Organizations
-        </BreadcrumbItem>
-        <BreadcrumbItem current>{organization.data.name}</BreadcrumbItem>
-      </Breadcrumbs>
+      <header className={styles.pageHead}>
+        <Breadcrumbs className={styles.crumb}>
+          <BreadcrumbItem href="/dashboard/organizations">
+            Organizations
+          </BreadcrumbItem>
+          <BreadcrumbItem current>{organization.data.name}</BreadcrumbItem>
+        </Breadcrumbs>
 
-      <div className={styles.sectionHead}>
-        <Heading level={2} size="heading-small">
-          {organization.data.name}
-        </Heading>
-        <Badge variant="outline" size="sm">
-          {organization.data.slug}
-        </Badge>
-      </div>
+        <div className={styles.sectionHead}>
+          <Heading level={2} size="heading-small">
+            {organization.data.name}
+          </Heading>
+          <Badge variant="outline" size="sm">
+            {organization.data.slug}
+          </Badge>
+        </div>
+      </header>
 
-      <Card className={styles.factsCard}>
+      <Card>
         <CardContent>
           <dl className={styles.facts}>
             {facts.map((fact) => (
@@ -269,7 +271,10 @@ export default async function OrganizationPage({
       {canManage ? (
         <details className={styles.details}>
           <summary className={styles.summary}>Add a member</summary>
-          <ActionForm action={addMember} className={styles.form}>
+          <ActionForm
+            action={addMember}
+            className={`${styles.form} ${styles.formPad}`}
+          >
             <input
               type="hidden"
               name="organizationId"
@@ -330,6 +335,6 @@ export default async function OrganizationPage({
           </ActionForm>
         </details>
       ) : null}
-    </>
+    </div>
   );
 }

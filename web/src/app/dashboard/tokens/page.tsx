@@ -52,7 +52,7 @@ export default async function TokensPage({
   const tokenList = result.data;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <section className={styles.section}>
@@ -131,6 +131,6 @@ export default async function TokensPage({
           </Table>
         </Card>
       </section>
-    </>
+    </div>
   );
 }

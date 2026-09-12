@@ -57,7 +57,7 @@ export default async function UsersPage({
   const userList = result.data;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <section className={styles.section}>
@@ -126,7 +126,10 @@ export default async function UsersPage({
 
         <details className={styles.details}>
           <summary className={styles.summary}>Create a user</summary>
-          <ActionForm action={createUser} className={styles.form}>
+          <ActionForm
+            action={createUser}
+            className={`${styles.form} ${styles.formPad}`}
+          >
             <Field>
               <Label htmlFor="userName">Name</Label>
               <Input id="userName" name="name" size="sm" required />
@@ -177,6 +180,6 @@ export default async function UsersPage({
           </ActionForm>
         </details>
       </section>
-    </>
+    </div>
   );
 }

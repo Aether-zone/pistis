@@ -57,7 +57,7 @@ export default async function OrganizationsPage({
   const organizations = result.data.items;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <div className={styles.sectionHead}>
@@ -117,7 +117,10 @@ export default async function OrganizationsPage({
 
       <details className={styles.details}>
         <summary className={styles.summary}>Create an organization</summary>
-        <ActionForm action={createOrganization} className={styles.form}>
+        <ActionForm
+          action={createOrganization}
+          className={`${styles.form} ${styles.formPad}`}
+        >
           <Field>
             <Label htmlFor="organizationName">Name</Label>
             <Input id="organizationName" name="name" size="sm" required />
@@ -140,11 +143,7 @@ export default async function OrganizationsPage({
             <Label htmlFor="organizationDescription">
               Description (optional)
             </Label>
-            <Input
-              id="organizationDescription"
-              name="description"
-              size="sm"
-            />
+            <Input id="organizationDescription" name="description" size="sm" />
           </Field>
 
           <div className={styles.span}>
@@ -154,6 +153,6 @@ export default async function OrganizationsPage({
           </div>
         </ActionForm>
       </details>
-    </>
+    </div>
   );
 }

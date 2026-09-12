@@ -112,38 +112,42 @@ export default async function ClientPage({
   ];
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
-      <Breadcrumbs className={styles.crumb}>
-        <BreadcrumbItem href="/dashboard/clients">OAuth clients</BreadcrumbItem>
-        <BreadcrumbItem current>{it.name}</BreadcrumbItem>
-      </Breadcrumbs>
+      <header className={styles.pageHead}>
+        <Breadcrumbs className={styles.crumb}>
+          <BreadcrumbItem href="/dashboard/clients">
+            OAuth clients
+          </BreadcrumbItem>
+          <BreadcrumbItem current>{it.name}</BreadcrumbItem>
+        </Breadcrumbs>
 
-      <div className={styles.sectionHead}>
-        <Heading level={2} size="heading-small">
-          {it.name}
-        </Heading>
-        {/* The colour it will dress its own sign-in page in. */}
-        <span className={styles.swatchCell}>
-          <span
-            className={styles.swatch}
-            style={{ backgroundColor: it.primaryColor }}
-          />
-          <span className={styles.mono}>{it.primaryColor}</span>
-        </span>
-        {it.organization ? (
-          <Badge variant="outline" size="sm">
-            {organizationList.find(
-              (organization) => organization.id === it.organization?.id,
-            )?.name ?? it.organization.id}
-            {' · '}
-            {it.organization.role}
-          </Badge>
-        ) : null}
-      </div>
+        <div className={styles.sectionHead}>
+          <Heading level={2} size="heading-small">
+            {it.name}
+          </Heading>
+          {/* The colour it will dress its own sign-in page in. */}
+          <span className={styles.swatchCell}>
+            <span
+              className={styles.swatch}
+              style={{ backgroundColor: it.primaryColor }}
+            />
+            <span className={styles.mono}>{it.primaryColor}</span>
+          </span>
+          {it.organization ? (
+            <Badge variant="outline" size="sm">
+              {organizationList.find(
+                (organization) => organization.id === it.organization?.id,
+              )?.name ?? it.organization.id}
+              {' · '}
+              {it.organization.role}
+            </Badge>
+          ) : null}
+        </div>
+      </header>
 
-      <Card className={styles.factsCard}>
+      <Card>
         <CardContent>
           <dl className={styles.facts}>
             {facts.map((fact) => (
@@ -323,6 +327,6 @@ export default async function ClientPage({
           </CardContent>
         </Card>
       </section>
-    </>
+    </div>
   );
 }
