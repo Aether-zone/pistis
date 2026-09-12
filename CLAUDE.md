@@ -202,10 +202,19 @@ await app.get(ClientService).register({
 Redirect URIs are required only for the authorization code grant, which is the
 one that has a browser to send back — so a service client needs none.
 
-**There is no way to change a binding, or a client's scopes, after
-registration.** The management API offers create, delete and rotate-secret and
-nothing else, so correcting a mistyped organization means deleting the client and
-registering it again, which issues a new secret.
+`PATCH /api/admin/clients/:clientId` changes a registered client — name,
+redirect URIs, grant types, scopes, binding. Absent fields are left alone, and
+`organization: null` removes a binding where absent keeps it. The clients screen
+edits the binding in place, since that is the field most likely to be wrong.
+
+The two rules a client's configuration must satisfy — a binding needs the
+`organizations` scope, and the authorization code grant needs a redirect URI —
+are checked in `ClientService` over the *resulting* client rather than in the
+request schema. A partial change cannot be judged on its own: dropping the scope
+is only wrong if a binding survives it, and the request may not mention the
+binding at all. Keeping them in the service also means a direct
+`ClientService.register(...)` call cannot bypass them, which a schema-level rule
+did.
 
 ### `api/src/organization/` — the reference feature module
 

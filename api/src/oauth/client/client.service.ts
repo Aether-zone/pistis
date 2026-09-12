@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType, type MembershipRole } from "@pistis/contract";
+import { formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType, type MembershipRole, type UpdateClientDTO } from "@pistis/contract";
 import { Repository } from "typeorm";
 
 import { PasswordEncoder } from "../../user/password/password.encoder";
@@ -59,24 +59,12 @@ export class ClientService {
             );
         }
 
-        /*
-         * A binding without the scope would mint tokens whose `orgs` claim
-         * contradicts organon's contract, which says the claim is present only
-         * when `organizations` was granted — and a resource server may rely on
-         * that. Refused here rather than dropped silently at token time,
-         * because the mistake is made once at registration and the symptom
-         * would otherwise be 403s from every organization-scoped route with
-         * nothing to connect them to the cause.
-         */
-        if (
-            registration.organization &&
-            !registration.scopes.includes('organizations')
-        ) {
-            throw OAuthException.invalidScope(
-                `Client "${registration.clientId}" is bound to an organization, `
-                + 'so it must also be granted the "organizations" scope.'
-            );
-        }
+        this.assertCoherent(registration.clientId, {
+            grantTypes: registration.grantTypes,
+            redirectUris: registration.redirectUris,
+            scopes: registration.scopes,
+            bound: Boolean(registration.organization)
+        });
 
         const client: Client = new Client();
         client.clientId = registration.clientId;
@@ -91,6 +79,106 @@ export class ClientService {
         client.organizationRole = registration.organization?.role ?? null;
 
         return this.clientRepository.save(client);
+    }
+
+    /**
+     * Changes what an admin may change about a client, leaving the rest alone.
+     *
+     * The rules are checked against the *result*, which is the only place they
+     * can be: dropping `organizations` from the scopes is wrong only if a
+     * binding survives the change, and adding `authorization_code` is wrong only
+     * if no redirect URI does. A request cannot be judged on its own.
+     *
+     * `organization: null` removes a binding and absent leaves it — the one
+     * field with two ways to say something about it. Everything else is
+     * replaced whole where given, so narrowing scopes here really is a
+     * revocation, deliberately: that is what an administrator asking for it
+     * means, unlike {@link grantScopes}, which a seed calls and must never use
+     * to take access away.
+     */
+    async update(client: Client, changes: UpdateClientDTO): Promise<Client> {
+        const unknownScopes: string[] = (changes.scopes ?? []).filter(
+            (scope) => !SUPPORTED_SCOPE_NAMES.includes(scope as never)
+        );
+
+        if (unknownScopes.length > 0) {
+            throw OAuthException.invalidScope(
+                `Unknown scope(s): ${formatScope(unknownScopes)}`
+            );
+        }
+
+        const organization: { id: string; role: MembershipRole } | null =
+            changes.organization === undefined
+                ? (client.organizationId && client.organizationRole
+                    ? { id: client.organizationId, role: client.organizationRole }
+                    : null)
+                : changes.organization;
+
+        const resulting = {
+            grantTypes: (changes.grantTypes ?? client.grantTypes) as GrantType[],
+            redirectUris: changes.redirectUris ?? client.redirectUris,
+            scopes: changes.scopes ?? client.scopes,
+            bound: organization !== null
+        };
+
+        this.assertCoherent(client.clientId, resulting);
+
+        client.name = changes.name ?? client.name;
+        client.redirectUris = resulting.redirectUris;
+        client.grantTypes = resulting.grantTypes;
+        client.scopes = resulting.scopes;
+        client.organizationId = organization?.id ?? null;
+        client.organizationRole = organization?.role ?? null;
+
+        return this.clientRepository.save(client);
+    }
+
+    /**
+     * The two things a client's configuration must not say at once.
+     *
+     * Shared by registration and update rather than written twice, and stated
+     * over a *resulting* configuration rather than a request, so a partial
+     * change is judged by what it leaves behind.
+     */
+    private assertCoherent(
+        clientId: string,
+        client: {
+            grantTypes: GrantType[];
+            redirectUris: string[];
+            scopes: string[];
+            bound: boolean;
+        }
+    ): void {
+        /*
+         * A binding without the scope would mint tokens whose `orgs` claim
+         * contradicts the published contract, which says the claim is present
+         * only when `organizations` was granted — and a resource server may rely
+         * on that. Refused here rather than dropped silently at token time,
+         * because the symptom would otherwise be 403s from every
+         * organization-scoped route with nothing to connect them to the cause.
+         */
+        if (client.bound && !client.scopes.includes('organizations')) {
+            throw OAuthException.invalidScope(
+                `Client "${clientId}" is bound to an organization, `
+                + 'so it must also be granted the "organizations" scope.'
+            );
+        }
+
+        /*
+         * In the service and not in the request schema, because the rule spans
+         * two fields and an update may carry neither. A client with a browser to
+         * send back and nowhere to send it is one that fails at the
+         * authorization endpoint rather than at registration.
+         */
+        if (
+            client.grantTypes.includes('authorization_code')
+            && client.redirectUris.length === 0
+        ) {
+            throw OAuthException.invalidRequest(
+                `Client "${clientId}" uses the authorization code grant, `
+                + 'so it needs at least one redirect URI to send the browser back to.'
+            );
+        }
     }
 
     /**

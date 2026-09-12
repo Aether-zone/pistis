@@ -37,10 +37,14 @@ export const createClientSchema = z.object({
     /** Omit for a public client, which must then use PKCE. */
     confidential: z.boolean(),
     /**
-     * Empty is allowed, and only the authorization code grant requires one —
-     * see the rule below. A client that only uses client credentials has no
-     * browser to send anywhere, and requiring a URI for it meant every service
-     * client in the workspace had to be registered in code instead.
+     * Empty is allowed here, and `ClientService` is what refuses it for a client
+     * that has a browser to send back — the rule depends on `grantTypes`, and
+     * for an update it depends on fields the request may not even carry, so it
+     * cannot live in a schema without living in two.
+     *
+     * A client that only uses client credentials has no browser to send
+     * anywhere. Requiring a URI of it meant every service client in the
+     * workspace had to be registered in code instead of through this API.
      */
     redirectUris: z.array(z.url()),
     grantTypes: z.array(
@@ -49,16 +53,35 @@ export const createClientSchema = z.object({
     scopes: z.array(z.string()).min(1),
     /** Omit for a client that acts on a person's behalf. */
     organization: clientOrganizationSchema.optional()
-}).refine(
-    (client) =>
-        !client.grantTypes.includes('authorization_code')
-        || client.redirectUris.length > 0,
-    {
-        error: 'A client using the authorization code grant needs at least one '
-            + 'redirect URI to send the browser back to.',
-        path: ['redirectUris']
-    }
-);
+});
+
+/**
+ * What an admin may change about a registered client.
+ *
+ * Every field optional: absent leaves the value alone. `clientId` is not here
+ * because it is the client's identity — the thing its own configuration names —
+ * and `clientSecret` is not either, because rotation is its own route and
+ * returns the new secret exactly once.
+ *
+ * `organization` is *nullable* where the others are not, because there are two
+ * ways to say something about a binding and only one of them is "leave it":
+ * `null` removes it, absent keeps it. The arrays have no such distinction —
+ * `[]` already says "none".
+ *
+ * The two rules `createClientSchema` enforces are not repeated here, because a
+ * partial change cannot be judged on its own: dropping `organizations` from the
+ * scopes is only wrong if a binding survives the change. They are checked
+ * against the *resulting* client instead — see `ClientService.update`.
+ */
+export const updateClientSchema = z.object({
+    name: z.string().min(1).max(200).optional(),
+    redirectUris: z.array(z.url()).optional(),
+    grantTypes: z.array(
+        z.enum(['authorization_code', 'refresh_token', 'client_credentials'])
+    ).min(1).optional(),
+    scopes: z.array(z.string()).min(1).optional(),
+    organization: clientOrganizationSchema.nullable().optional()
+});
 
 /**
  * The generated secret, returned exactly once at registration or rotation —
@@ -72,4 +95,5 @@ export const clientSecretSchema = z.object({
 export type ClientOrganizationDTO = z.infer<typeof clientOrganizationSchema>;
 export type AdminClientDTO = z.infer<typeof adminClientSchema>;
 export type CreateClientDTO = z.infer<typeof createClientSchema>;
+export type UpdateClientDTO = z.infer<typeof updateClientSchema>;
 export type ClientSecretDTO = z.infer<typeof clientSecretSchema>;

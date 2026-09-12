@@ -5,6 +5,7 @@ import {
     type AdminTokenDTO,
     type AdminUserDTO,
     type ClientSecretDTO,
+    type UpdateClientDTO,
     type CreateAdminUserDTO,
     type CreateClientDTO
 } from "@pistis/contract";
@@ -61,6 +62,25 @@ export class AdminService {
         });
 
         return { clientId: request.clientId, clientSecret: clientSecret ?? '' };
+    }
+
+    /**
+     * Changes a registered client. Absent fields are left alone; a null
+     * `organization` removes the binding.
+     *
+     * Returns the client as the dashboard sees it, so a caller does not have to
+     * re-list to find out what it now says.
+     */
+    async updateClient(
+        clientId: string,
+        request: UpdateClientDTO
+    ): Promise<AdminClientDTO> {
+        return this.toClientDTO(
+            await this.clientService.update(
+                await this.loadClient(clientId),
+                request
+            )
+        );
     }
 
     async rotateClientSecret(clientId: string): Promise<ClientSecretDTO> {

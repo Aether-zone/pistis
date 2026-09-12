@@ -1,15 +1,17 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Patch, Post, UseGuards } from "@nestjs/common";
 import {
     createAdminUserSchema,
     createClientSchema,
     setPasswordSchema,
+    updateClientSchema,
     type AdminClientDTO,
     type AdminTokenDTO,
     type AdminUserDTO,
     type ClientSecretDTO,
     type CreateAdminUserDTO,
     type CreateClientDTO,
-    type SetPasswordDTO
+    type SetPasswordDTO,
+    type UpdateClientDTO
 } from "@pistis/contract";
 
 import { SchemaValidationPipe } from "../common/schema-validation.pipe";
@@ -33,6 +35,18 @@ export class AdminController {
         @Body(new SchemaValidationPipe(createClientSchema)) request: CreateClientDTO
     ): Promise<ClientSecretDTO> {
         return this.adminService.createClient(request);
+    }
+
+    /**
+     * Changes a client. `PATCH` rather than `PUT`: every field is optional and
+     * absent means "leave it", which is not what a replace says.
+     */
+    @Patch('/clients/:clientId')
+    updateClient(
+        @Param('clientId') clientId: string,
+        @Body(new SchemaValidationPipe(updateClientSchema)) request: UpdateClientDTO
+    ): Promise<AdminClientDTO> {
+        return this.adminService.updateClient(clientId, request);
     }
 
     @Post('/clients/:clientId/secret')
