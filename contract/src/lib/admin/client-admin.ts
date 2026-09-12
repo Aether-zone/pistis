@@ -36,14 +36,29 @@ export const createClientSchema = z.object({
     name: z.string().min(1).max(200),
     /** Omit for a public client, which must then use PKCE. */
     confidential: z.boolean(),
-    redirectUris: z.array(z.url()).min(1),
+    /**
+     * Empty is allowed, and only the authorization code grant requires one —
+     * see the rule below. A client that only uses client credentials has no
+     * browser to send anywhere, and requiring a URI for it meant every service
+     * client in the workspace had to be registered in code instead.
+     */
+    redirectUris: z.array(z.url()),
     grantTypes: z.array(
         z.enum(['authorization_code', 'refresh_token', 'client_credentials'])
     ).min(1),
     scopes: z.array(z.string()).min(1),
     /** Omit for a client that acts on a person's behalf. */
     organization: clientOrganizationSchema.optional()
-});
+}).refine(
+    (client) =>
+        !client.grantTypes.includes('authorization_code')
+        || client.redirectUris.length > 0,
+    {
+        error: 'A client using the authorization code grant needs at least one '
+            + 'redirect URI to send the browser back to.',
+        path: ['redirectUris']
+    }
+);
 
 /**
  * The generated secret, returned exactly once at registration or rotation —

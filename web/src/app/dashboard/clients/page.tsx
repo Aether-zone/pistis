@@ -8,6 +8,7 @@ import {
   Heading,
   Input,
   Label,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -17,7 +18,11 @@ import {
   TableRow,
   Text,
 } from '@aether-zone/kosmos';
-import type { AdminClientDTO } from '@pistis/contract';
+import type {
+  AdminClientDTO,
+  OrganizationDTO,
+  Pageable,
+} from '@pistis/contract';
 import { redirect } from 'next/navigation';
 
 import { callWithSession } from '@/lib/session-api';
@@ -36,6 +41,9 @@ const GRANT_TYPES = [
   'client_credentials',
 ] as const;
 
+/** Ordered by authority, matching organon's own ordering. */
+const ORGANIZATION_ROLES = ['member', 'admin', 'owner'] as const;
+
 export default async function ClientsPage({
   searchParams,
 }: {
@@ -43,6 +51,15 @@ export default async function ClientsPage({
 }) {
   const notice = (await searchParams).notice;
   const result = await callWithSession<AdminClientDTO[]>('/api/admin/clients');
+  /*
+   * For the binding picker below. Fetched even when nothing is bound, because
+   * the form is rendered on the same pass — and failing this must not take the
+   * page down, since listing clients is the reason anybody came here.
+   */
+  const organizations = await callWithSession<Pageable<OrganizationDTO>>(
+    '/api/organizations?perPage=100',
+  );
+  const organizationList = organizations?.ok ? organizations.data.items : [];
 
   if (result === null) {
     redirect('/login');
@@ -82,13 +99,14 @@ export default async function ClientsPage({
                 <TableHead>Redirect URIs</TableHead>
                 <TableHead>Grants</TableHead>
                 <TableHead>Scopes</TableHead>
+                <TableHead>Organization</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
               {clientList.length === 0 ? (
                 <TableRow>
-                  <TableEmpty colSpan={7}>
+                  <TableEmpty colSpan={8}>
                     No clients yet. Register one below — the authorization flow
                     needs one before it can start.
                   </TableEmpty>
@@ -111,6 +129,24 @@ export default async function ClientsPage({
                     </TableCell>
                     <TableCell className={styles.mono}>
                       {client.scopes.join(' ')}
+                    </TableCell>
+                    <TableCell>
+                      {client.organization ? (
+                        <>
+                          {organizationList.find(
+                            (organization) =>
+                              organization.id === client.organization?.id,
+                          )?.name ?? client.organization.id}{' '}
+                          <Badge variant="outline" size="sm">
+                            {client.organization.role}
+                          </Badge>
+                        </>
+                      ) : (
+                        /* Not bound: it acts for whoever signed in. */
+                        <Text as="span" size="body-small">
+                          —
+                        </Text>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className={styles.rowActions}>
@@ -171,7 +207,10 @@ export default async function ClientsPage({
               <Label htmlFor="redirectUris">
                 Redirect URIs (space separated)
               </Label>
-              <Input id="redirectUris" name="redirectUris" size="sm" required />
+              {/* Not required: a client that only uses client credentials has
+                  no browser to send anywhere. The api enforces the real rule,
+                  which is that the authorization code grant needs one. */}
+              <Input id="redirectUris" name="redirectUris" size="sm" />
             </Field>
 
             <Field>
@@ -209,6 +248,37 @@ export default async function ClientsPage({
                   </Text>
                 </Label>
               </div>
+            </Field>
+
+            <Field>
+              <Label htmlFor="organizationId">Organization</Label>
+              {/* For a client that acts with no person behind it. Its token
+                  otherwise belongs to no tenant, and every organization-scoped
+                  route refuses it. Needs the `organizations` scope above. */}
+              <Select id="organizationId" name="organizationId" size="sm">
+                <option value="">None — acts for whoever signed in</option>
+                {organizationList.map((organization) => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+
+            <Field>
+              <Label htmlFor="organizationRole">Role in that organization</Label>
+              <Select
+                id="organizationRole"
+                name="organizationRole"
+                size="sm"
+                defaultValue="member"
+              >
+                {ORGANIZATION_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {role}
+                  </option>
+                ))}
+              </Select>
             </Field>
 
             <div className={styles.span}>
