@@ -17,6 +17,7 @@ ADRs document significant architectural decisions, the context behind them, and 
 | [0007](0007-the-browser-never-calls-the-api.md) | The browser never calls the API directly | Accepted |
 | [0008](0008-shared-contract-as-typescript-source.md) | The shared contract is consumed as TypeScript source | Accepted |
 | [0009](0009-sqlite-with-schema-synchronisation.md) | SQLite with schema synchronisation, for now | Accepted |
+| [0010](0010-clients-bound-to-an-organization.md) | A client may be bound to an organization | Accepted |
 
 ## Statuses
 
