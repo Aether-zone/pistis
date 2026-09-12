@@ -39,30 +39,33 @@ function list(form: FormData, field: string): string[] {
 const SESSION_EXPIRED = 'Your session has expired. Sign in again.';
 
 /**
- * Changes a client's organization binding, and only that.
+ * Changes a client from its details page.
  *
- * The one field an admin is likely to need to correct — it names a uuid — and
- * the one the API could not change at all until there was a `PATCH`. Everything
- * else about a client is left alone by sending nothing else: absent means
- * "leave it".
+ * Every field it carries is sent, so this is a replace of the editable surface
+ * rather than a patch of one corner — the form shows the current values, so
+ * whatever is in it *is* the intent. `PATCH` is still the right method: the
+ * fields it does not mention, like the client id and the secret, stay as they
+ * are.
  */
-export async function rebindClient(
+export async function editClient(
   _previous: DashboardState,
   form: FormData,
 ): Promise<DashboardState> {
+  const clientId = text(form, 'clientId');
   const organizationId = text(form, 'organizationId');
 
   const result = await callWithSession<unknown>(
-    `/api/admin/clients/${encodeURIComponent(text(form, 'clientId'))}`,
+    `/api/admin/clients/${encodeURIComponent(clientId)}`,
     {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      /*
-       * `null` removes the binding where absent would leave it — the one field
-       * with two ways to say something about it. An empty select means "none",
-       * so it has to send null rather than omit the key.
-       */
       body: JSON.stringify({
+        name: text(form, 'name'),
+        redirectUris: list(form, 'redirectUris'),
+        grantTypes: form.getAll('grantTypes').map(String),
+        scopes: list(form, 'scopes'),
+        primaryColor: text(form, 'primaryColor'),
+        // `null` clears the binding; the schema has no other way to say it.
         organization: organizationId
           ? {
               id: organizationId,
@@ -81,8 +84,10 @@ export async function rebindClient(
     return { error: result.message };
   }
 
+  revalidatePath(`/dashboard/clients/${clientId}`);
   revalidatePath('/dashboard/clients');
-  withNotice('/dashboard/clients', 'Binding updated.');
+
+  return { message: 'Saved.' };
 }
 
 export async function createClient(

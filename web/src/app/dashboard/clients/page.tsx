@@ -31,16 +31,12 @@ import type {
   OrganizationDTO,
   Pageable,
 } from '@pistis/contract';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 
 import { callWithSession } from '@/lib/session-api';
 import { ActionForm, SubmitButton } from '../action-form';
-import {
-  createClient,
-  deleteClient,
-  rebindClient,
-  rotateSecret,
-} from '../actions';
+import { createClient, deleteClient, rotateSecret } from '../actions';
 import styles from '../dashboard.module.css';
 import { Notice } from '../notice';
 import { Yes } from '../yes';
@@ -143,7 +139,12 @@ export default async function ClientsPage({
                 clientList.map((client) => (
                   <TableRow key={client.id}>
                     <TableCell className={styles.mono}>
-                      {client.clientId}
+                      <Link
+                        href={`/dashboard/clients/${encodeURIComponent(client.clientId)}`}
+                        className={styles.link}
+                      >
+                        {client.clientId}
+                      </Link>
                     </TableCell>
                     <TableCell>{client.name}</TableCell>
                     <TableCell>
@@ -174,46 +175,30 @@ export default async function ClientsPage({
                       {client.scopes.join(' ')}
                     </TableCell>
                     <TableCell>
-                      {/* Editable in place: a binding names a uuid, so it is
-                          the field most likely to need correcting, and
-                          re-registering the client to fix one would issue a new
-                          secret. Sending only this leaves the rest alone. */}
-                      <ActionForm
-                        action={rebindClient}
-                        className={styles.inlineForm}
-                      >
-                        <input
-                          type="hidden"
-                          name="clientId"
-                          value={client.clientId}
-                        />
-                        <Select
-                          name="organizationId"
-                          size="sm"
-                          aria-label={`Organization for ${client.clientId}`}
-                          defaultValue={client.organization?.id ?? ''}
-                        >
-                          <option value="">— none —</option>
-                          {organizationList.map((organization) => (
-                            <option key={organization.id} value={organization.id}>
-                              {organization.name}
-                            </option>
-                          ))}
-                        </Select>
-                        <Select
-                          name="organizationRole"
-                          size="sm"
-                          aria-label={`Role for ${client.clientId}`}
-                          defaultValue={client.organization?.role ?? 'member'}
-                        >
-                          {ORGANIZATION_ROLES.map((role) => (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          ))}
-                        </Select>
-                        <SubmitButton pendingLabel="Saving…">Save</SubmitButton>
-                      </ActionForm>
+                      {/*
+                        Read-only now. This was an inline editor because there
+                        was nowhere else to change a binding; the details page
+                        is that somewhere, and two surfaces for one field is one
+                        too many — the table could never have offered scopes or
+                        grant types beside it without becoming a form
+                        pretending to be a list.
+                      */}
+                      {client.organization ? (
+                        <>
+                          {organizationList.find(
+                            (organization) =>
+                              organization.id === client.organization?.id,
+                          )?.name ?? client.organization.id}{' '}
+                          <Badge variant="outline" size="sm">
+                            {client.organization.role}
+                          </Badge>
+                        </>
+                      ) : (
+                        /* Not bound: it acts for whoever signed in. */
+                        <Text as="span" size="body-small">
+                          —
+                        </Text>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className={styles.rowActions}>

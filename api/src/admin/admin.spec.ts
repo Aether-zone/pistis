@@ -195,6 +195,75 @@ describe('client management', () => {
         expect(JSON.stringify(list.body)).not.toContain(created.body.clientSecret);
     });
 
+    /*
+     * The details page reads one client rather than filtering a listing —
+     * which also means a bad id is a 404 there rather than a blank page.
+     */
+    it('fetches one client, without its secret', async () => {
+        const created = await call('/api/admin/clients', {
+            method: 'POST', token: adminToken,
+            body: JSON.stringify({
+                clientId: 'one-of-many', name: 'One', confidential: true,
+                redirectUris: ['https://one.example/cb'],
+                grantTypes: ['authorization_code'], scopes: ['profile'],
+                primaryColor: '#0f766e'
+            })
+        });
+
+        const result = await call('/api/admin/clients/one-of-many', {
+            token: adminToken
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.body).toMatchObject({
+            clientId: 'one-of-many',
+            name: 'One',
+            primaryColor: '#0f766e',
+            organization: null
+        });
+        expect(JSON.stringify(result.body))
+            .not.toContain(created.body.clientSecret);
+    });
+
+    it('answers 404 for a client id nobody registered', async () => {
+        expect((await call('/api/admin/clients/never-was', { token: adminToken }))
+            .status).toBe(404);
+    });
+
+    it('changes a client, leaving the fields the request omits alone', async () => {
+        // The details form sends every field it shows, but the client id and
+        // the secret are not among them and must survive a save.
+        await call('/api/admin/clients', {
+            method: 'POST', token: adminToken,
+            body: JSON.stringify({
+                clientId: 'editable', name: 'Before', confidential: true,
+                redirectUris: ['https://editable.example/cb'],
+                grantTypes: ['authorization_code'], scopes: ['profile']
+            })
+        });
+
+        const patched = await call('/api/admin/clients/editable', {
+            method: 'PATCH', token: adminToken,
+            body: JSON.stringify({ name: 'After', primaryColor: '#7c3aed' })
+        });
+
+        expect(patched.status).toBe(200);
+        expect(patched.body).toMatchObject({
+            clientId: 'editable',
+            name: 'After',
+            primaryColor: '#7c3aed',
+            // Untouched by the change.
+            redirectUris: ['https://editable.example/cb'],
+            scopes: ['profile'],
+            confidential: true
+        });
+    });
+
+    it('requires an admin session to read one client', async () => {
+        // Every other route here is guarded; this one is new and must be too.
+        expect((await call('/api/admin/clients/one-of-many')).status).toBe(401);
+    });
+
     it('rotates a secret so the old one stops working', async () => {
         await call('/api/admin/clients', {
             method: 'POST', token: adminToken,

@@ -202,10 +202,16 @@ await app.get(ClientService).register({
 Redirect URIs are required only for the authorization code grant, which is the
 one that has a browser to send back — so a service client needs none.
 
-`PATCH /api/admin/clients/:clientId` changes a registered client — name,
-redirect URIs, grant types, scopes, primary colour, binding. Absent fields are left alone, and
-`organization: null` removes a binding where absent keeps it. The clients screen
-edits the binding in place, since that is the field most likely to be wrong.
+`GET /api/admin/clients/:clientId` reads one, and
+`PATCH /api/admin/clients/:clientId` changes it — name, redirect URIs, grant
+types, scopes, primary colour, binding. Absent fields are left alone, and
+`organization: null` removes a binding where absent keeps it.
+
+The dashboard has a page per client at `/dashboard/clients/:clientId` where all
+of that is edited; the listing links to it and edits nothing itself. What the
+page shows but does not offer to change is the client id — its identity, which
+the client's own configuration names — and the secret, which can be replaced
+but never read back.
 
 The two rules a client's configuration must satisfy — a binding needs the
 `organizations` scope, and the authorization code grant needs a redirect URI —

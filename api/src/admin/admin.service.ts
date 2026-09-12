@@ -65,6 +65,11 @@ export class AdminService {
         return { clientId: request.clientId, clientSecret: clientSecret ?? '' };
     }
 
+    /** One client, or a 404. */
+    async getClient(clientId: string): Promise<AdminClientDTO> {
+        return this.toClientDTO(await this.loadClient(clientId));
+    }
+
     /**
      * Changes a registered client. Absent fields are left alone; a null
      * `organization` removes the binding.
