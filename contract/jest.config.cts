@@ -16,12 +16,6 @@ module.exports = {
   transform: {
     '^.+\\.[tj]s$': ['@swc/jest', swcJestConfig],
   },
-  // This package is ESM under `nodenext`, so its relative imports carry a `.js`
-  // extension that points at a file only TypeScript can see. Strip it so Jest
-  // resolves the `.ts` source instead.
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-  },
   moduleFileExtensions: ['ts', 'js', 'html'],
   coverageDirectory: 'test-output/jest/coverage',
 };

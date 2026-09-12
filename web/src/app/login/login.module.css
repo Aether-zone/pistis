@@ -1,120 +1,44 @@
-.form {
-  box-sizing: border-box;
-  width: min(100% - 2rem, 26rem);
-  margin: 4rem auto;
-  padding: 2rem;
-  border: 1px solid #e2e5ea;
-  border-radius: 0.75rem;
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(16 24 40 / 6%);
+/**
+ * Layout only. Kosmos owns the card surface, typography and controls, so what
+ * is left here is where the card sits and how its rows are spaced.
+ *
+ * These rules are unlayered and kosmos ships its utilities in `@layer
+ * utilities`, so an unlayered declaration wins the cascade whatever the
+ * stylesheet order — `.actions` overrides the footer's flex defaults without
+ * having to out-specify them.
+ */
+
+.page {
+  display: flex;
+  justify-content: center;
+  padding: 4rem 1rem;
 }
 
-.heading {
-  margin: 0 0 0.5rem;
-  font-size: 1.5rem;
-  line-height: 1.2;
-}
-
-.lead {
-  margin: 0 0 1.5rem;
-  color: #4a5261;
-}
-
-.notice {
-  margin: 0 0 1.5rem;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  background: #f3f4f6;
-  color: #4a5261;
-  font-size: 0.875rem;
-}
-
-.field {
-  display: block;
-  margin-bottom: 1rem;
-}
-
-.label {
-  display: block;
-  margin-bottom: 0.375rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.input {
-  box-sizing: border-box;
+.card {
   width: 100%;
-  padding: 0.625rem 0.75rem;
-  border: 1px solid #cbd2dc;
-  border-radius: 0.5rem;
-  font: inherit;
+  max-width: 26rem;
 }
 
-.input:focus-visible {
-  outline: 2px solid #2f6feb;
-  outline-offset: 1px;
-  border-color: #2f6feb;
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .scopes {
-  margin: 1.5rem 0;
-  padding: 0.875rem 1rem;
-  border-radius: 0.5rem;
-  background: #f7f8fa;
-}
-
-.scopesHeading {
-  margin: 0 0 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.scopeList {
-  margin: 0;
-  padding-left: 1.125rem;
-  color: #4a5261;
-  font-size: 0.875rem;
-}
-
-.error {
-  margin: 0 0 1rem;
-  padding: 0.75rem;
-  border-radius: 0.5rem;
-  background: #fdecec;
-  color: #96222a;
-  font-size: 0.875rem;
-}
-
-.actions {
   display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/*
+ * Reversed, because the markup puts Allow first so that it is the form's
+ * default submit button (see the note in login-form.tsx). In `row-reverse` the
+ * main axis starts at the right, so `flex-start` is what keeps the pair
+ * right-aligned — and the first child, Allow, stays the rightmost.
+ */
+.actions {
+  flex-direction: row-reverse;
   gap: 0.75rem;
-  justify-content: flex-end;
-  margin-top: 1.5rem;
-}
-
-.primary,
-.secondary {
-  padding: 0.625rem 1.125rem;
-  border-radius: 0.5rem;
-  font: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.primary {
-  border: 1px solid #2f6feb;
-  background: #2f6feb;
-  color: #fff;
-}
-
-.secondary {
-  border: 1px solid #cbd2dc;
-  background: #fff;
-  color: #303743;
-}
-
-.primary:disabled,
-.secondary:disabled {
-  opacity: 0.6;
-  cursor: progress;
+  justify-content: flex-start;
 }

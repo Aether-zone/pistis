@@ -14,10 +14,10 @@ import { configureApp, GLOBAL_PREFIX } from './app/configure';
  *
  * `process.loadEnvFile` is built into Node, so this needs no dotenv dependency.
  * It never overwrites a variable that is already set, which gives the ordering
- * we want: an inline `PORT=3005 nx serve` beats api/.env, which beats the root
- * .env. The bundle runs from api/dist, so api/.env is one level up — resolving
- * it from __dirname rather than the cwd matters because `nx serve` runs from
- * the workspace root.
+ * we want: an inline `PORT=3005 pnpm start:server` beats api/.env, which beats
+ * the root .env. The bundle runs from api/dist, so api/.env is one level up —
+ * resolving it from __dirname rather than the cwd matters because the dev
+ * server runs from the workspace root.
  */
 function loadEnvFiles(): void {
   for (const path of [join(__dirname, '..', '.env'), '.env']) {

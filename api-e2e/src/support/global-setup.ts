@@ -1,4 +1,4 @@
-import { waitForPortOpen } from '@nx/node/utils';
+import { waitForPortOpen } from './wait-for-port-open';
 import { spawn } from 'child_process';
 import { join } from 'path';
 
@@ -8,12 +8,12 @@ import { API_HOST, API_PORT } from './ports';
 var __TEARDOWN_MESSAGE__: string;
 
 /**
- * Starts the built api itself rather than depending on `nx serve`.
+ * Starts the built api itself rather than depending on a watch-mode server.
  *
- * The serve target is continuous, so its lifetime overlaps whatever runs next
- * and its watcher rebuilds `api/dist` underneath other tasks. Owning the
- * process here also means teardown can stop exactly what it started, instead
- * of stopping whatever happens to hold a port.
+ * A watch-mode server outlives the suite and rebuilds `api/dist` underneath
+ * whatever runs next. Owning the process here also means teardown can stop
+ * exactly what it started, instead of stopping whatever happens to hold a
+ * port.
  */
 module.exports = async function () {
   console.log('\nSetting up...\n');

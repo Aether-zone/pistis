@@ -1,3 +1,20 @@
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  Card,
+  Field,
+  Heading,
+  Input,
+  Label,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@aether-zone/kosmos';
 import type { OrganizationDTO, Pageable } from '@pistis/contract';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
@@ -31,9 +48,9 @@ export default async function OrganizationsPage({
 
   if (!result.ok) {
     return (
-      <p className={styles.error} role="alert">
-        {result.message}
-      </p>
+      <Alert variant="destructive">
+        <AlertDescription>{result.message}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -44,78 +61,92 @@ export default async function OrganizationsPage({
       <Notice notice={notice} />
 
       <div className={styles.sectionHead}>
-        <h2>Organizations</h2>
-        <span className={styles.count}>{result.data.totalNumberOfElements}</span>
+        <Heading level={2} size="heading-small">
+          Organizations
+        </Heading>
+        <Badge variant="outline" size="sm">
+          {result.data.totalNumberOfElements}
+        </Badge>
       </div>
 
-      <div className={styles.scroller}>
-        {organizations.length === 0 ? (
-          <p className={styles.empty}>
-            You do not belong to any organization yet. Creating one makes you
-            its owner.
-          </p>
-        ) : (
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Slug</th>
-                <th>Description</th>
-                <th>Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {organizations.map((organization) => (
-                <tr key={organization.id}>
-                  <td>
-                    <Link href={`/dashboard/organizations/${organization.id}`}>
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Slug</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Created</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {organizations.length === 0 ? (
+              <TableRow>
+                <TableEmpty colSpan={4}>
+                  You do not belong to any organization yet. Creating one makes
+                  you its owner.
+                </TableEmpty>
+              </TableRow>
+            ) : (
+              organizations.map((organization) => (
+                <TableRow key={organization.id}>
+                  <TableCell>
+                    {/* kosmos's Link renders its own anchor with no way to
+                        swap the element, so next/link stays and takes the
+                        styling from the stylesheet. */}
+                    <Link
+                      className={styles.link}
+                      href={`/dashboard/organizations/${organization.id}`}
+                    >
                       {organization.name}
                     </Link>
-                  </td>
-                  <td className={styles.mono}>{organization.slug}</td>
-                  <td className={styles.wrap}>
+                  </TableCell>
+                  <TableCell className={styles.mono}>
+                    {organization.slug}
+                  </TableCell>
+                  <TableCell className={styles.wrap}>
                     {organization.description ?? '—'}
-                  </td>
-                  <td>{when(organization.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+                  </TableCell>
+                  <TableCell>{when(organization.createdAt)}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       <details className={styles.details}>
         <summary className={styles.summary}>Create an organization</summary>
         <ActionForm action={createOrganization} className={styles.form}>
-          <label className={styles.field} htmlFor="organizationName">
-            <span className={styles.label}>Name</span>
-            <input
-              className={styles.input}
-              id="organizationName"
-              name="name"
-              required
-            />
-          </label>
-          <label className={styles.field} htmlFor="organizationSlug">
-            <span className={styles.label}>
+          <Field>
+            <Label htmlFor="organizationName">Name</Label>
+            <Input id="organizationName" name="name" size="sm" required />
+          </Field>
+
+          <Field>
+            <Label htmlFor="organizationSlug">
               Slug (lowercase, hyphen separated)
-            </span>
-            <input
-              className={styles.input}
+            </Label>
+            <Input
               id="organizationSlug"
               name="slug"
+              size="sm"
               pattern="[a-z0-9]+(-[a-z0-9]+)*"
               required
             />
-          </label>
-          <label className={styles.field} htmlFor="organizationDescription">
-            <span className={styles.label}>Description (optional)</span>
-            <input
-              className={styles.input}
+          </Field>
+
+          <Field>
+            <Label htmlFor="organizationDescription">
+              Description (optional)
+            </Label>
+            <Input
               id="organizationDescription"
               name="description"
+              size="sm"
             />
-          </label>
+          </Field>
+
           <div className={styles.span}>
             <SubmitButton variant="primary" pendingLabel="Creating…">
               Create organization

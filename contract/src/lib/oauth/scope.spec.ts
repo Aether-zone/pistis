@@ -1,9 +1,13 @@
-import {
-    describeScopes,
-    formatScope,
-    parseScope,
-    SUPPORTED_SCOPE_NAMES
-} from './scope.js';
+import { describeScopes, SUPPORTED_SCOPE_NAMES } from './scope.js';
+
+/*
+ * `parseScope` and `formatScope` are organon's now. They stay covered here
+ * rather than being deleted with the local copy: organon has no tests for
+ * them, and what these assert is the wire format pistis mints and accepts
+ * tokens against — a contract worth failing loudly if the dependency changes
+ * it under us.
+ */
+import { formatScope, parseScope } from '../organon.js';
 
 describe('parseScope', () => {
 

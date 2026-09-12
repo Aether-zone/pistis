@@ -8,7 +8,7 @@ test.describe('the application shell', () => {
     await signIn(page);
 
     const toolbar = await page.getByRole('banner').boundingBox();
-    const sidebar = await page.getByRole('complementary').boundingBox();
+    const sidebar = await page.getByRole('navigation', { name: 'Sections' }).boundingBox();
     const main = await page.getByRole('main').boundingBox();
 
     expect(toolbar!.y + toolbar!.height).toBeLessThanOrEqual(sidebar!.y + 1);
@@ -26,7 +26,7 @@ test.describe('the application shell', () => {
       ['Overview', 'Overview'],
     ] as const) {
       await page
-        .getByRole('complementary')
+        .getByRole('navigation', { name: 'Sections' })
         .getByRole('link', { name: label })
         .click();
 
@@ -42,7 +42,7 @@ test.describe('organizations', () => {
   test('creating one makes the caller its owner', async ({ page }) => {
     await signIn(page);
     await page
-      .getByRole('complementary')
+      .getByRole('navigation', { name: 'Sections' })
       .getByRole('link', { name: 'Organizations' })
       .click();
 
@@ -59,7 +59,7 @@ test.describe('organizations', () => {
   test('shows members, and refuses to remove the last owner', async ({ page }) => {
     await signIn(page);
     await page
-      .getByRole('complementary')
+      .getByRole('navigation', { name: 'Sections' })
       .getByRole('link', { name: 'Organizations' })
       .click();
 

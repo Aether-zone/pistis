@@ -53,7 +53,10 @@ export async function submitLogin(
         ...params,
         username,
         password,
-        approved: text(form, 'decision') !== 'deny',
+        // Explicit allow, not "anything but deny": consent should fail closed,
+        // so a submission that carries no decision at all is a denial rather
+        // than a grant.
+        approved: text(form, 'decision') === 'allow',
       }),
     });
 

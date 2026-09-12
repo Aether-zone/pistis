@@ -4,9 +4,9 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug @pistis/api with Nx",
+      "name": "Debug @pistis/api",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["exec", "nx", "serve", "@pistis/api"],
+      "runtimeArgs": ["--filter", "@pistis/api", "serve"],
       "env": {
         "NODE_OPTIONS": "--inspect=9229"
       },

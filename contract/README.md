@@ -76,8 +76,8 @@ interoperability.
 ## Testing
 
 ```sh
-npx nx test @pistis/contract
-npx nx typecheck @pistis/contract
+pnpm --filter @pistis/contract test
+pnpm --filter @pistis/contract typecheck
 ```
 
 Only the runtime helpers are worth testing here — scope parsing and formatting,

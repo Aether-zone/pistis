@@ -1,16 +1,19 @@
 import { defineConfig, devices } from '@playwright/test';
-import { nxE2EPreset } from '@nx/playwright/preset';
-import { workspaceRoot } from '@nx/devkit';
-import { join } from 'path';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
 
 /**
  * Generated as a .mts file so Node forces ESM regardless of workspace
  * `type`. Playwright routes `.mts` through its ESM loader (dynamic import,
- * bypassing the pirates CJS-compile path), and Nx's native TS strip loads
- * `.mts` directly. Playwright's configLoader auto-discovers
+ * bypassing the pirates CJS-compile path) and auto-discovers
  * `playwright.config.mts` via its extension list
  * (.ts/.js/.mts/.mjs/.cts/.cjs).
  */
+
+const here = dirname(fileURLToPath(import.meta.url));
+// The servers below run from the workspace root, because the api's bundle and
+// the Next build are both addressed relative to it.
+const workspaceRoot = join(here, '..');
 
 // Dedicated ports: the defaults are already contested, and these tests must not
 // find — or kill — a server someone is using.
@@ -21,18 +24,37 @@ const baseURL = process.env['BASE_URL'] || `http://localhost:${WEB_PORT}`;
 const apiUrl = `http://localhost:${API_PORT}`;
 
 export default defineConfig({
-  ...nxE2EPreset(import.meta.dirname, { testDir: './src' }),
+  testDir: './src',
+  outputDir: 'test-output/playwright/output',
+  fullyParallel: true,
+  // A stray `test.only` passes locally and silently skips the rest of the
+  // suite in CI; refuse it there.
+  forbidOnly: !!process.env['CI'],
+  retries: process.env['CI'] ? 2 : 0,
+  workers: process.env['CI'] ? 1 : undefined,
+  reporter: [
+    [
+      'html',
+      {
+        outputFolder: 'test-output/playwright/report',
+        open: 'on-failure',
+      },
+    ],
+    ...(process.env['CI']
+      ? ([
+          ['blob', { outputDir: 'test-output/playwright/blob-report' }],
+        ] as const)
+      : []),
+  ],
   use: {
     baseURL,
     trace: 'on-first-retry',
   },
   /*
-   * Both servers run as already-built artefacts; the `e2e` target's `dependsOn`
-   * builds them. Watch-mode servers are deliberately avoided: `nx serve` is
-   * deduplicated and `next dev` is lock-guarded, so either would attach to
-   * whatever a developer already has running — on the wrong port, against the
-   * wrong api. Nested `nx` calls are avoided too, since they race the outer
-   * process for the project graph.
+   * Both servers run as already-built artefacts; `pnpm e2e` builds them first.
+   * Watch-mode servers are deliberately avoided: they are lock-guarded and
+   * would attach to whatever a developer already has running — on the wrong
+   * port, against the wrong api.
    */
   webServer: [
     {

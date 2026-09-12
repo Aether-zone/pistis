@@ -1,3 +1,25 @@
+import {
+  Alert,
+  AlertDescription,
+  Badge,
+  BreadcrumbItem,
+  Breadcrumbs,
+  Card,
+  CardContent,
+  Field,
+  Heading,
+  Input,
+  Label,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableEmpty,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Text,
+} from '@aether-zone/kosmos';
 import type {
   AdminUserDTO,
   MembershipDTO,
@@ -6,7 +28,6 @@ import type {
   Pageable,
   UserDTO,
 } from '@pistis/contract';
-import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 
 import { callWithSession } from '@/lib/session-api';
@@ -53,9 +74,9 @@ export default async function OrganizationPage({
     }
 
     return (
-      <p className={styles.error} role="alert">
-        {organization.message}
-      </p>
+      <Alert variant="destructive">
+        <AlertDescription>{organization.message}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -81,108 +102,99 @@ export default async function OrganizationPage({
       )
     : [];
 
+  const facts = [
+    { term: 'Slug', value: organization.data.slug, mono: true },
+    { term: 'Description', value: organization.data.description ?? '—' },
+    { term: 'Created', value: when(organization.data.createdAt) },
+    {
+      term: 'Your role',
+      value: myRole ?? (viewer?.admin ? 'administrator' : '—'),
+    },
+  ];
+
   return (
     <>
       <Notice notice={notice} />
 
-      <p className={styles.crumb}>
-        <Link href="/dashboard/organizations">Organizations</Link> /{' '}
-        {organization.data.name}
-      </p>
+      <Breadcrumbs className={styles.crumb}>
+        <BreadcrumbItem href="/dashboard/organizations">
+          Organizations
+        </BreadcrumbItem>
+        <BreadcrumbItem current>{organization.data.name}</BreadcrumbItem>
+      </Breadcrumbs>
 
       <div className={styles.sectionHead}>
-        <h2>{organization.data.name}</h2>
-        <span className={styles.count}>{organization.data.slug}</span>
+        <Heading level={2} size="heading-small">
+          {organization.data.name}
+        </Heading>
+        <Badge variant="outline" size="sm">
+          {organization.data.slug}
+        </Badge>
       </div>
 
-      <dl className={styles.facts}>
-        <div>
-          <dt>Slug</dt>
-          <dd className={styles.mono}>{organization.data.slug}</dd>
-        </div>
-        <div>
-          <dt>Description</dt>
-          <dd>{organization.data.description ?? '—'}</dd>
-        </div>
-        <div>
-          <dt>Created</dt>
-          <dd>{when(organization.data.createdAt)}</dd>
-        </div>
-        <div>
-          <dt>Your role</dt>
-          <dd>{myRole ?? (viewer?.admin ? 'administrator' : '—')}</dd>
-        </div>
-      </dl>
+      <Card className={styles.factsCard}>
+        <CardContent>
+          <dl className={styles.facts}>
+            {facts.map((fact) => (
+              <div key={fact.term}>
+                <dt>
+                  <Text as="span" size="label" tone="muted">
+                    {fact.term}
+                  </Text>
+                </dt>
+                <dd className={fact.mono ? styles.mono : undefined}>
+                  {fact.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
 
       <div className={styles.sectionHead}>
-        <h3>Members</h3>
-        <span className={styles.count}>{memberList.length}</span>
+        <Heading level={3} size="heading-small">
+          Members
+        </Heading>
+        <Badge variant="outline" size="sm">
+          {memberList.length}
+        </Badge>
       </div>
 
-      <div className={styles.scroller}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Joined</th>
-              {canManage ? <th /> : null}
-            </tr>
-          </thead>
-          <tbody>
-            {memberList.map((member) => {
-              // Only owners may touch another owner, which is what stops an
-              // admin from demoting the people who appointed them.
-              const editable =
-                canManage && (member.role !== 'owner' || canManageOwners);
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead>Joined</TableHead>
+              {canManage ? <TableHead /> : null}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {memberList.length === 0 ? (
+              <TableRow>
+                <TableEmpty colSpan={canManage ? 5 : 4}>
+                  No members yet.
+                </TableEmpty>
+              </TableRow>
+            ) : (
+              memberList.map((member) => {
+                // Only owners may touch another owner, which is what stops an
+                // admin from demoting the people who appointed them.
+                const editable =
+                  canManage && (member.role !== 'owner' || canManageOwners);
 
-              return (
-                <tr key={member.id}>
-                  <td>{member.user.name}</td>
-                  <td className={styles.mono}>{member.user.email}</td>
-                  <td>
-                    {editable ? (
-                      <ActionForm
-                        action={updateMemberRole}
-                        className={styles.inlineForm}
-                      >
-                        <input
-                          type="hidden"
-                          name="organizationId"
-                          value={organization.data.id}
-                        />
-                        <input
-                          type="hidden"
-                          name="userId"
-                          value={member.user.id}
-                        />
-                        <select
-                          className={styles.input}
-                          name="role"
-                          defaultValue={member.role}
-                          aria-label={`Role for ${member.user.email}`}
-                        >
-                          {ROLES.filter(
-                            (role) => role !== 'owner' || canManageOwners,
-                          ).map((role) => (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          ))}
-                        </select>
-                        <SubmitButton pendingLabel="Saving…">Save</SubmitButton>
-                      </ActionForm>
-                    ) : (
-                      member.role
-                    )}
-                  </td>
-                  <td>{when(member.createdAt)}</td>
-                  {canManage ? (
-                    <td>
+                return (
+                  <TableRow key={member.id}>
+                    <TableCell>{member.user.name}</TableCell>
+                    <TableCell className={styles.mono}>
+                      {member.user.email}
+                    </TableCell>
+                    <TableCell>
                       {editable ? (
                         <ActionForm
-                          action={removeMember}
+                          action={updateMemberRole}
                           className={styles.inlineForm}
                         >
                           <input
@@ -195,19 +207,64 @@ export default async function OrganizationPage({
                             name="userId"
                             value={member.user.id}
                           />
-                          <SubmitButton variant="danger" pendingLabel="Removing…">
-                            Remove
+                          <Select
+                            className={styles.select}
+                            name="role"
+                            size="sm"
+                            defaultValue={member.role}
+                            aria-label={`Role for ${member.user.email}`}
+                          >
+                            {ROLES.filter(
+                              (role) => role !== 'owner' || canManageOwners,
+                            ).map((role) => (
+                              <option key={role} value={role}>
+                                {role}
+                              </option>
+                            ))}
+                          </Select>
+                          <SubmitButton pendingLabel="Saving…">
+                            Save
                           </SubmitButton>
                         </ActionForm>
-                      ) : null}
-                    </td>
-                  ) : null}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+                      ) : (
+                        member.role
+                      )}
+                    </TableCell>
+                    <TableCell>{when(member.createdAt)}</TableCell>
+                    {canManage ? (
+                      <TableCell>
+                        {editable ? (
+                          <ActionForm
+                            action={removeMember}
+                            className={styles.inlineForm}
+                          >
+                            <input
+                              type="hidden"
+                              name="organizationId"
+                              value={organization.data.id}
+                            />
+                            <input
+                              type="hidden"
+                              name="userId"
+                              value={member.user.id}
+                            />
+                            <SubmitButton
+                              variant="danger"
+                              pendingLabel="Removing…"
+                            >
+                              Remove
+                            </SubmitButton>
+                          </ActionForm>
+                        ) : null}
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {canManage ? (
         <details className={styles.details}>
@@ -218,32 +275,41 @@ export default async function OrganizationPage({
               name="organizationId"
               value={organization.data.id}
             />
-            <label className={styles.field} htmlFor="memberUserId">
-              <span className={styles.label}>User</span>
+
+            <Field>
+              <Label htmlFor="memberUserId">User</Label>
               {candidates.length > 0 ? (
-                <select className={styles.input} id="memberUserId" name="userId" required>
+                <Select
+                  className={styles.select}
+                  id="memberUserId"
+                  name="userId"
+                  size="sm"
+                  required
+                >
                   {candidates.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name} · {user.email}
                     </option>
                   ))}
-                </select>
+                </Select>
               ) : (
-                <input
-                  className={styles.input}
+                <Input
                   id="memberUserId"
                   name="userId"
+                  size="sm"
                   placeholder="User id"
                   required
                 />
               )}
-            </label>
-            <label className={styles.field} htmlFor="memberRole">
-              <span className={styles.label}>Role</span>
-              <select
-                className={styles.input}
+            </Field>
+
+            <Field>
+              <Label htmlFor="memberRole">Role</Label>
+              <Select
+                className={styles.select}
                 id="memberRole"
                 name="role"
+                size="sm"
                 defaultValue="member"
               >
                 {ROLES.filter(
@@ -253,8 +319,9 @@ export default async function OrganizationPage({
                     {role}
                   </option>
                 ))}
-              </select>
-            </label>
+              </Select>
+            </Field>
+
             <div className={styles.span}>
               <SubmitButton variant="primary" pendingLabel="Adding…">
                 Add member

@@ -8,7 +8,6 @@ dist
 **/.next
 out
 **/out
-.nx
 coverage
 test-output
 **/test-output

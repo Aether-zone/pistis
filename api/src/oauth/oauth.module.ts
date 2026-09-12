@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { AuthModule } from "../auth/auth.module";
 import { PasswordModule } from "../user/password/password.module";
+import { MembershipModule } from "../organization/membership/membership.module";
 import { UserModule } from "../user/user.module";
 import { BearerTokenGuard } from "./bearer-token.guard";
 import { DevSeedService } from "./dev-seed.service";
@@ -31,6 +32,9 @@ import { TokenHash } from "./token-hash";
             RefreshToken
         ]),
         UserModule,
+        // For the `orgs` claim. MembershipModule imports neither this module nor
+        // OrganizationModule, so the dependency stays one-way.
+        MembershipModule,
         PasswordModule,
         AuthModule,
         JwtModule

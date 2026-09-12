@@ -8,51 +8,77 @@ conventions and sharp edges that are not decisions so much as things to know.
 
 ## Workspace
 
-Nx 23 monorepo (`@pistis/source`) using **pnpm workspaces**, package-manager-based projects (no `project.json` — Nx targets live inline under the `nx` key of each project's `package.json`, everything else is inferred by Nx plugins for TS/Next/webpack/eslint/jest/playwright).
+Plain **pnpm workspace** (`@pistis/source`). There is no build orchestrator: every project declares its own `scripts`, and the root `package.json` fans out across them with `pnpm -r`. Shared configuration lives in three files at the root — `tsconfig.base.json`, `eslint.config.mjs` and `jest.preset.js` — which each project extends.
 
-Projects (`npx nx show projects`):
+Projects (`pnpm -r exec pwd`, or read `pnpm-workspace.yaml`):
 
 | Project | Path | What it is |
 | --- | --- | --- |
-| `@pistis/api` | `api/` | NestJS 11 backend, bundled with webpack (`NxAppWebpackPlugin`, `compiler: 'tsc'`) |
+| `@pistis/api` | `api/` | NestJS 11 backend, bundled with plain webpack + ts-loader |
 | `@pistis/web` | `web/` | Next.js 16 App Router frontend |
 | `@pistis/contract` | `contract/` | Shared DTO types, consumed by both api and web |
 | `@pistis/api-e2e` | `api-e2e/` | Jest + axios e2e hitting a running api |
 | `@pistis/web-e2e` | `web-e2e/` | Playwright e2e against the Next dev server |
 
-`packages/` exists for future publishable libs but is empty.
+`packages/` is empty. The two published packages that briefly lived there are
+now **one** package in the **organon** repository — `@aether-zone/organon`,
+which exposes the token vocabulary on its `/pistis` subpath and the Nest
+resource-server guard on `/pistis-nest`. Everything in this workspace is
+`private: true`; nothing here is published.
+
+That move has one consequence worth knowing before touching the contract:
+
+- **`@pistis/contract` re-exports the token vocabulary from
+  `@aether-zone/organon/pistis`, which is an installed package now, not a
+  workspace sibling.** The subpath matters: the package's root entry point and
+  its `/pistis-nest` one pull in passport, which this repository has no use for
+  and deliberately does not install. Importing from the root barrel instead
+  would drag it in. `oauth/jwt.ts`, `oauth/userinfo.ts`, `oauth/scope.ts`
+  and `organization/membership.ts` are re-export shims over it. Changing the
+  shape of an access token claim therefore means releasing organon first and
+  bumping the dependency here — this repository can no longer change its own
+  token format in a single commit.
+- It is listed as a dependency of **`api` and `web` as well as `contract`**.
+  The api bundle keeps every bare specifier a real `require`, so anything the
+  compiled-in contract reaches for has to be resolvable at runtime — the same
+  reason `zod` is in that list. Dropping it would produce a `pnpm deploy`
+  directory that is missing it and a server that dies on boot.
 
 ## Commands
 
-Project names are scoped (`@pistis/api`); Nx also resolves the bare directory name (`api`).
+Project names are scoped (`@pistis/api`) and are what `--filter` takes.
 
 ```sh
-pnpm start:server                       # nx serve api
-npx nx serve @pistis/api                # NestJS on :3000, global prefix /api
-npx nx dev @pistis/web                  # Next dev server, also :3000 (see gotchas)
-npx nx build @pistis/api                # webpack -> api/dist
-npx nx build @pistis/web
+pnpm start:server                            # api, watch mode; rebuilds and restarts
+pnpm start:web                               # Next dev server
 
-npx nx test @pistis/api                 # jest (swc transform)
-npx nx test @pistis/web                 # jest via next/jest, jsdom
-npx nx e2e @pistis/api-e2e              # builds + serves api first, then runs jest
-npx nx e2e @pistis/web-e2e              # playwright; boots `nx run @pistis/web:dev` itself
+pnpm lint                                    # all projects, in parallel
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm e2e                                     # both e2e suites, each building first
 
-npx nx lint @pistis/api
-npx nx typecheck @pistis/contract
-npx nx run-many -t lint test build      # all projects
-npx nx affected -t lint test build      # only what changed
+pnpm --filter @pistis/api build              # webpack -> api/dist
+pnpm --filter @pistis/web build
+pnpm --filter @pistis/api test               # jest (swc transform)
+pnpm --filter @pistis/web test               # jest via next/jest, jsdom
+pnpm --filter @pistis/api-e2e e2e            # builds the api, then runs jest
+pnpm --filter @pistis/web-e2e e2e            # builds both, then playwright
+pnpm --filter @pistis/api lint
+pnpm --filter @pistis/contract typecheck
 ```
 
 Single test / single file:
 
 ```sh
-npx nx test @pistis/api -- -t "should hash the password"
-npx nx test @pistis/api -- src/user/password/password.service.spec.ts
-npx nx e2e @pistis/web-e2e -- --grep "login" --project=chromium
+pnpm --filter @pistis/api test -- -t "should hash the password"
+pnpm --filter @pistis/api test -- src/user/password/password.service.spec.ts
+pnpm --filter @pistis/web-e2e e2e -- --grep "login" --project=chromium
 ```
 
-TypeScript project references are maintained by Nx; run `npx nx sync` after adding a cross-project import (`npx nx sync:check` in CI).
+`pnpm start:server` runs `api/dev.js`: one webpack compiler in watch mode owning one child process, killed and respawned on each successful emit. Neither tool does that alone — `webpack --watch` never restarts the process and `node --watch` cannot compile TypeScript. The child runs from the **workspace root**, so TypeORM's default `db.sqlite` stays where it has always been.
+
+TypeScript project references are maintained by hand. After adding an import that crosses a project boundary, add the matching entry to the importing project's `references`; `pnpm typecheck` fails without it.
 
 ## Architecture
 
@@ -119,7 +145,7 @@ Design decisions worth knowing before changing anything here:
 
   ```sh
   openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out oauth-signing.pem
-  OAUTH_JWT_PRIVATE_KEY="$(cat oauth-signing.pem)" npx nx serve @pistis/api
+  OAUTH_JWT_PRIVATE_KEY="$(cat oauth-signing.pem)" pnpm start:server
   ```
 
   The `kid` is the RFC 7638 thumbprint of the public key, so it is derived from the key rather than configured.
@@ -129,7 +155,7 @@ Design decisions worth knowing before changing anything here:
 ```sh
 OAUTH_DEV_SEED=true \
 OAUTH_DEV_SEED_REDIRECT_URIS=http://localhost:3002/callback \
-PORT=3001 npx nx serve @pistis/api
+PORT=3001 pnpm start:server
 # client_id="demo-client" client_secret="demo-secret"
 # login="demo@example.com" password="demo-password"
 ```
@@ -208,8 +234,8 @@ App Router under `web/src/app/`, CSS Modules, path alias `@/*` → `./src/*` (ma
 Configure it in `web/.env.local` (copy `web/.env.example`); `api/.env` does the same job for the api, loaded by `main.ts` through Node's own `process.loadEnvFile`, so no dotenv dependency is involved. Inline variables beat both.
 
 ```sh
-npx nx serve @pistis/api      # reads api/.env
-npx nx dev @pistis/web        # reads web/.env.local
+pnpm start:server   # reads api/.env
+pnpm start:web      # reads web/.env.local
 ```
 
 `/dashboard` is the management UI: sign in at `/login` with an admin account and it lists clients, users and tokens with forms to change them. Two conventions there are load-bearing:
@@ -219,7 +245,7 @@ npx nx dev @pistis/web        # reads web/.env.local
 
 ## Gotchas / current state
 
-- **Port collision:** both `nx serve @pistis/api` and `nx dev @pistis/web` default to `3000`. Set `PORT` when running them together (`PORT=3001 npx nx serve @pistis/api`) — but note `api-e2e` and the Playwright config both hardcode/`3000`-default, so e2e runs assume the default.
+- **Port collision:** the api and the Next dev server both default to `3000`. The root `start:server`/`start:web` scripts move them to 3001 and 3002; running either binary directly needs `PORT` set. Both e2e suites use their own dedicated ports (3100/3101 for web-e2e, 3102 for api-e2e) and are unaffected.
 - `POST /api/users` still cannot set a password — use `POST /api/admin/users` or the dashboard. The two user-creation paths should probably be reconciled.
 - `/api/users` is still unauthenticated, unlike `/api/organizations`, which is now behind `PoliciesGuard`.
 - The dashboard mirrors the CASL rules to decide which controls to show. The api remains the authority, but the two can drift — a rule change needs both.
@@ -236,10 +262,14 @@ Three Dockerfiles — `api/Dockerfile`, `web/Dockerfile` and a combined `Dockerf
 — all built from the repository root. Points that are not obvious:
 
 - **The api image installs its runtime dependencies in the builder, not the
-  runner.** `nx prune @pistis/api` writes `api/dist/package.json` plus a matching
-  lockfile, with `@pistis/contract` rewritten to a `file:` reference under
-  `workspace_modules`. better-sqlite3 and bcrypt are compiled there, where a
-  toolchain exists, and copied to a runner on the same base so the bindings match.
+  runner.** `pnpm deploy --filter @pistis/api --prod /deploy` resolves the api's
+  production dependencies out of the workspace lockfile and writes a
+  self-contained directory, node_modules and all — the replacement for
+  `nx prune`. better-sqlite3 and bcrypt are compiled there, where a toolchain
+  exists, and copied to a runner on the same base so the bindings match. The
+  deploy directory also carries the api's source, which the runtime has no use
+  for, so the runner copies `node_modules` and `package.json` from it and the
+  bundle from `api/dist`.
 - **The web image installs with `--ignore-scripts`.** A pnpm workspace install
   resolves every project's dependencies, so the web build would otherwise try to
   compile the api's better-sqlite3 and bcrypt and fail for want of a toolchain
@@ -261,26 +291,24 @@ when a draft is published, and no longer on tag pushes, which would race the
 release build for the same tags. `latest` tracks the newest full release rather
 than `main`.
 
-`nx affected` in CI needs `fetch-depth: 0` and `nrwl/nx-set-shas`.
+CI runs the root scripts in order — `pnpm lint`, `typecheck`, `test`, `build`,
+then `pnpm e2e` in a second job. There is no affected-graph computation and so
+no `fetch-depth: 0`: every job does the whole workspace.
 
-**`web-e2e` was missing from `pnpm-workspace.yaml`.** It was a project only
-because the Playwright plugin inferred one from `playwright.config.mts`, so its
-`package.json` was never read: no `nx.targets`, no `implicitDependencies`, no
-graph edges. Anything configured there was silently ignored, and its `e2e`
-target ran with no dependencies — passing locally only because `api/dist`
-happened to exist from an earlier build. It is now a workspace package, and
-`nx.json` excludes it from `@nx/playwright` so its explicit target stands, in
-the same way `api-e2e` is excluded from `@nx/jest`.
+**Every project must be listed in `pnpm-workspace.yaml`.** `web-e2e` once was
+not, and nothing ran its `package.json` at all; the suite passed locally only
+because `api/dist` happened to exist from an earlier build. A project missing
+from that file is invisible to `pnpm -r` and to `--filter`, silently, so it is
+the first thing to check when a target seems not to run.
 
 **Both e2e suites start their own servers on dedicated ports** (3100/3101 for
-web-e2e, 3102 for api-e2e) and stop them by pid. Neither depends on
-`@pistis/api:serve`: that target is continuous, so its lifetime overlaps
-whatever runs next and its watcher rebuilds `api/dist` underneath it. The
-generated api-e2e teardown called `killPort`, which stops whatever holds a port
-rather than what the suite started — on a developer's machine that is as likely
-to be a server they are using. `web-e2e` builds through the target's
-`dependsOn` rather than inside Playwright's `webServer`, because a nested `nx`
-invocation races the outer one for the project graph.
+web-e2e, 3102 for api-e2e) and stop them by pid. Neither uses the watch-mode
+dev server: it outlives the suite and rebuilds `api/dist` underneath whatever
+runs next. Each suite's `e2e` script builds what it needs first, rather than
+building inside Playwright's `webServer`, so a stale bundle can never be what
+gets tested. `api-e2e`'s teardown stops the process it spawned by pid; the
+generated version called `killPort`, which stops whatever holds a port — on a
+developer's machine as likely to be a server they are using.
 
 `api-e2e/.spec.swcrc` targets es2022: at es2017 SWC downlevels `??` and its
 nullish-coalescing transform panics on the support files.
@@ -290,9 +318,12 @@ nullish-coalescing transform panics on the support files.
 Three non-obvious pieces of configuration that will look removable and are not:
 
 - **`transformIgnorePatterns` in `api/jest.config.cts`.** `@nestjs/typeorm` v12 is published as pure ESM with no `require` condition, so CJS Jest cannot load it. That one package is transformed by SWC; the negative lookahead spans both separators (`@nestjs+typeorm` and `@nestjs/typeorm`) to cope with pnpm's doubled path. Both `.spec.swcrc` files emit `commonjs` for the same reason.
-- **`externals` + `mergeExternals` in `api/webpack.config.js`.** Nx's default `externalDependencies: 'all'` feeds `webpack-node-externals` the *workspace root* `node_modules`, but pnpm installs `better-sqlite3`, `bcrypt` and `typeorm` into `api/node_modules`, where it cannot see them. Bundled, the native loaders look for their `.node` binaries under `api/dist` and the server dies on boot with `No native build was found`; typeorm additionally loads drivers via `require(computedName)`, which webpack cannot resolve. `mergeExternals: true` keeps Nx's default and adds these three on top.
-- `contract/jest.config.cts` maps `./x.js` → `./x` so Jest can resolve the `.js` extensions that `nodenext` requires in the ESM source, and `web/jest.config.cts` maps the `@/*` alias, which SWC is explicitly told not to resolve.
+- **The `externals` function in `api/webpack.config.js`.** Every bare specifier stays a real `require`; only this project's own source and `@pistis/contract` are bundled. Deciding by request *shape* rather than by scanning a `node_modules` directory is the point: under pnpm, `better-sqlite3`, `bcrypt` and `typeorm` live in `api/node_modules`, and the scan-based approach fed the *workspace root* directory and missed them. Bundled, the native loaders look for their `.node` binaries under `api/dist` and the server dies on boot with `No native build was found`; typeorm additionally loads drivers via `require(computedName)`, which webpack cannot resolve. The bundle's requires are therefore exactly `api/package.json`'s dependencies — `zod` is in that list because `@pistis/contract` is compiled in and brings it.
+- **`api/tsconfig.webpack.json` is separate from `tsconfig.app.json` on purpose.** ts-loader compiles `@pistis/contract`'s source into the bundle, which `rootDir: "src"` rejects with TS6059 on every contract file; the webpack config reaches `rootDir` up to the workspace root and turns the declaration emit off. `tsconfig.app.json` still describes the typecheck build, which is a different job. `resolve.extensionAlias` in the same file maps `./x.js` → `./x.ts`, because contract is ESM under `nodenext`.
+- **`moduleNameMapper` in `jest.preset.js`** does that same `.js` → `.ts` mapping for Jest, for every project. It used to come from the Nx jest resolver, which each project inherited through the preset. `web/jest.config.cts` additionally maps the `@/*` alias, which SWC is explicitly told not to resolve.
 
 ## Style
 
-Prettier with `singleQuote: true`. The Nest code in `api/src` currently uses 4-space indent and double quotes in imports (not Prettier-formatted); the generated Nx code elsewhere is Prettier-formatted at 2 spaces. Match the file you are editing.
+Prettier with `singleQuote: true`. The Nest code in `api/src` currently uses 4-space indent and double quotes in imports (not Prettier-formatted); the code elsewhere is Prettier-formatted at 2 spaces. Match the file you are editing.
+
+`eslint.config.mjs` at the root keeps the rule severities the Nx ESLint plugin used to supply — `no-explicit-any`, `no-unused-vars` and `no-non-null-assertion` are warnings, `no-require-imports` is off. `contract/src` depends on the second of those: it keeps zod schemas module-private and exports only `z.infer` of them, which the rule reads as "assigned a value but only used as a type". `eslint-config-prettier` is deliberately not applied — the pinned 10.0.0 ships no `main` and no `exports`, so it never loaded under Nx either, and importing it now would turn a silent no-op into a crash.

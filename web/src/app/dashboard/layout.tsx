@@ -1,3 +1,12 @@
+import {
+  AppBar,
+  AppBarSection,
+  AppBarTitle,
+  Badge,
+  Sidenav,
+  SidenavContent,
+  Text,
+} from '@aether-zone/kosmos';
 import type { UserDTO } from '@pistis/contract';
 import { redirect } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -24,6 +33,9 @@ const ADMINISTRATION = [
  * The application shell: toolbar across the top, sidebar down the left, and the
  * page in `main`. Authentication is checked once here rather than in each page,
  * so a section only ever renders for someone signed in.
+ *
+ * The grid is still local — kosmos supplies the bar and the sidebar, not the
+ * page skeleton that arranges them.
  */
 export default async function DashboardLayout({
   children,
@@ -40,25 +52,32 @@ export default async function DashboardLayout({
 
   return (
     <div className={styles.shell}>
-      <header className={styles.toolbar}>
-        <h1 className={styles.brand}>
-          Pistis <span>· management</span>
-        </h1>
-        <div className={styles.toolbarRight}>
+      <AppBar size="sm" className={styles.toolbar}>
+        <AppBarTitle>
+          Pistis <span className={styles.brandSuffix}>· management</span>
+        </AppBarTitle>
+
+        <AppBarSection className={styles.toolbarRight}>
           {user ? (
-            <span className={styles.who}>
-              <span className={styles.whoName}>{user.name}</span>
-              {user.admin ? <span className={styles.badge}>admin</span> : null}
-            </span>
+            <Text size="body-small" tone="muted">
+              <strong className={styles.whoName}>{user.name}</strong>
+              {user.admin ? (
+                <Badge variant="success" size="sm" className={styles.whoBadge}>
+                  admin
+                </Badge>
+              ) : null}
+            </Text>
           ) : null}
           <SignOut />
-        </div>
-      </header>
+        </AppBarSection>
+      </AppBar>
 
-      <aside className={styles.sidebar}>
-        <Nav heading="Workspace" items={WORKSPACE} />
-        <Nav heading="Administration" items={ADMINISTRATION} />
-      </aside>
+      <Sidenav className={styles.sidebar} aria-label="Sections">
+        <SidenavContent className={styles.sidebarContent}>
+          <Nav heading="Workspace" items={WORKSPACE} />
+          <Nav heading="Administration" items={ADMINISTRATION} />
+        </SidenavContent>
+      </Sidenav>
 
       <main className={styles.main}>{children}</main>
     </div>

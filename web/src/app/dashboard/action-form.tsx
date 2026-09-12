@@ -1,5 +1,12 @@
 'use client';
 
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  Code,
+  Form,
+} from '@aether-zone/kosmos';
 import { useActionState, type ReactNode } from 'react';
 import { useFormStatus } from 'react-dom';
 
@@ -27,29 +34,36 @@ export function ActionForm({ action, children, className }: ActionFormProps) {
   const [state, formAction] = useActionState(action, INITIAL);
 
   return (
-    <form action={formAction} className={className}>
+    <Form action={formAction} className={className}>
       {state.error ? (
-        <p className={styles.error} role="alert">
-          {state.error}
-        </p>
+        <Alert variant="destructive" className={styles.formAlert}>
+          <AlertDescription>{state.error}</AlertDescription>
+        </Alert>
       ) : null}
 
       {state.message ? (
-        <p className={styles.ok} role="status">
-          {state.message}
-        </p>
+        <Alert variant="success" role="status" className={styles.formAlert}>
+          <AlertDescription>{state.message}</AlertDescription>
+        </Alert>
       ) : null}
 
       {state.secret ? (
-        <p className={styles.secret} role="status">
-          Secret for <strong>{state.secret.clientId}</strong> — copy it now, it
-          is stored only as a hash and cannot be shown again.
-          <code className={styles.secretValue}>{state.secret.clientSecret}</code>
-        </p>
+        <Alert variant="warning" role="status" className={styles.formAlert}>
+          <AlertDescription>
+            Secret for <strong>{state.secret.clientId}</strong> — copy it now,
+            it is stored only as a hash and cannot be shown again.
+          </AlertDescription>
+          {/* A sibling of the description rather than inside it: `block` makes
+              this a <pre>, which cannot legally sit in the <p> that
+              AlertDescription renders. */}
+          <Code block className={styles.secretValue}>
+            {state.secret.clientSecret}
+          </Code>
+        </Alert>
       ) : null}
 
       {children}
-    </form>
+    </Form>
   );
 }
 
@@ -58,6 +72,13 @@ export interface SubmitButtonProps {
   pendingLabel?: string;
   variant?: 'primary' | 'danger' | 'quiet';
 }
+
+/** Maps this app's three button roles onto kosmos's variants. */
+const VARIANTS = {
+  primary: 'primary',
+  danger: 'destructive',
+  quiet: 'secondary',
+} as const;
 
 /** Reads the enclosing form's pending state, which only works from inside it. */
 export function SubmitButton({
@@ -68,8 +89,13 @@ export function SubmitButton({
   const { pending } = useFormStatus();
 
   return (
-    <button className={styles[variant]} type="submit" disabled={pending}>
+    <Button
+      variant={VARIANTS[variant]}
+      size="sm"
+      type="submit"
+      disabled={pending}
+    >
       {pending ? (pendingLabel ?? children) : children}
-    </button>
+    </Button>
   );
 }

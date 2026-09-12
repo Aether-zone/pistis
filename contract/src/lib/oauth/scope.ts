@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+// `formatScope` and `parseScope` are organon's and re-exported from
+// `lib/organon.ts`. What stays here is the catalogue — which scopes exist, and
+// how a consent screen describes them — which is this server's alone.
+
 /**
  * Scopes this authorization server knows about. `description` is what a
  * consent screen shows the resource owner, so keep it user-facing.
@@ -9,6 +13,7 @@ export const SUPPORTED_SCOPES = {
     email: 'View your email address',
     'users:read': 'Read the user directory',
     'users:write': 'Create and modify users',
+    organizations: 'See which organizations you belong to',
 } as const;
 
 export type SupportedScope = keyof typeof SUPPORTED_SCOPES;
@@ -23,19 +28,6 @@ export const scopeDescriptorSchema = z.object({
 });
 
 export type ScopeDescriptorDTO = z.infer<typeof scopeDescriptorSchema>;
-
-/** OAuth puts scopes on the wire as a single space-delimited string (RFC 6749 §3.3). */
-export function parseScope(scope: string | undefined | null): string[] {
-    if (!scope) {
-        return [];
-    }
-
-    return [...new Set(scope.split(' ').filter((value) => value.length > 0))];
-}
-
-export function formatScope(scopes: readonly string[]): string {
-    return scopes.join(' ');
-}
 
 export function describeScopes(scopes: readonly string[]): ScopeDescriptorDTO[] {
     return scopes.map((name) => ({

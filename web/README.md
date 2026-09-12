@@ -5,7 +5,7 @@ and the management dashboard.
 
 ```sh
 cp .env.example .env.local     # point PISTIS_API_URL at the running api
-PORT=3002 npx nx dev @pistis/web
+pnpm start:web
 ```
 
 ## Routes
@@ -98,8 +98,8 @@ checked once in `dashboard/layout.tsx`, so no section repeats it.
 ## Testing
 
 ```sh
-npx nx test @pistis/web    # jest, jsdom
-npx nx e2e @pistis/web-e2e # playwright; starts the dev server itself
+pnpm --filter @pistis/web test    # jest, jsdom
+pnpm --filter @pistis/web-e2e e2e # playwright; builds and starts both servers
 ```
 
 Unit tests cover the server actions and the pure helpers. Anything that depends

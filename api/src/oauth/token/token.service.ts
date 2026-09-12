@@ -1,8 +1,9 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { formatScope, type AccessTokenClaimsDTO, type IntrospectionResponseDTO, type TokenResponseDTO } from "@pistis/contract";
+import { formatScope, type AccessTokenClaimsDTO, type IntrospectionResponseDTO, type OrganizationMembershipClaim, type TokenResponseDTO } from "@pistis/contract";
 import { IsNull, Repository } from "typeorm";
 
+import { MembershipService } from "../../organization/membership/membership.service";
 import { AccessTokenFactory, type MintedAccessToken } from "../jwt/access-token.factory";
 import { OAuthException } from "../oauth.error";
 import { OAUTH_OPTIONS, type OAuthOptions } from "../oauth.options";
@@ -27,6 +28,7 @@ export class TokenService {
         @InjectRepository(RefreshToken) private readonly refreshTokenRepository: Repository<RefreshToken>,
         private readonly tokenHash: TokenHash,
         private readonly accessTokenFactory: AccessTokenFactory,
+        private readonly membershipService: MembershipService,
         @Inject(OAUTH_OPTIONS) private readonly options: OAuthOptions
     ) { }
 
@@ -34,7 +36,8 @@ export class TokenService {
         const minted: MintedAccessToken = this.accessTokenFactory.mint({
             clientId: request.clientId,
             userId: request.userId,
-            scopes: request.scopes
+            scopes: request.scopes,
+            organizations: await this.resolveOrganizations(request)
         });
 
         const access: AccessToken = new AccessToken();
@@ -76,6 +79,27 @@ export class TokenService {
         await this.refreshTokenRepository.save(refresh);
 
         return { ...response, refresh_token: refreshToken };
+    }
+
+    /**
+     * The subject's organizations, for the `orgs` claim.
+     *
+     * Read on every issue rather than carried along from the authorization code,
+     * so the refresh grant re-reads them: a role change or a removal takes
+     * effect on the client's next refresh instead of only on its next sign-in.
+     * That is the whole staleness budget a resource server is exposed to, since
+     * it trusts the claim without asking.
+     */
+    private async resolveOrganizations(
+        request: IssueTokenRequest
+    ): Promise<Record<string, OrganizationMembershipClaim> | undefined> {
+        // No user means the client credentials grant, where the subject is the
+        // client itself and memberships are meaningless.
+        if (!request.userId || !request.scopes.includes('organizations')) {
+            return undefined;
+        }
+
+        return this.membershipService.getMembershipClaimsOf(request.userId);
     }
 
     /**
