@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap } from "@nestjs/comm
 import { type UserDTO } from "@pistis/contract";
 
 import { PasswordService } from "../user/password/password.service";
+import { OrganizationService } from "../organization/organization.service";
 import { UserService } from "../user/user.service";
 import { ClientService } from "./client/client.service";
 import { OAUTH_OPTIONS, type OAuthOptions } from "./oauth.options";
@@ -10,6 +11,18 @@ export const DEV_SEED_CLIENT_ID = 'demo-client';
 export const DEV_SEED_CLIENT_SECRET = 'demo-secret';
 export const DEV_SEED_EMAIL = 'demo@example.com';
 export const DEV_SEED_PASSWORD = 'demo-password';
+
+/**
+ * An organization for the seeded account to own.
+ *
+ * Without one the demo user belongs to nothing, their token carries an empty
+ * `orgs` claim, and every organization-scoped route in the workspace refuses
+ * them — which is nearly every route outside pistis. Creating one through the
+ * dashboard works and is what a real setup does, but "sign in and then make an
+ * organization before anything works" is a step a seed exists to remove.
+ */
+export const DEV_SEED_ORGANIZATION_NAME = 'Demo Organization';
+export const DEV_SEED_ORGANIZATION_SLUG = 'demo';
 
 /**
  * mneme's own client, for the work that has no person behind it.
@@ -58,6 +71,7 @@ export class DevSeedService implements OnApplicationBootstrap {
         private readonly clientService: ClientService,
         private readonly userService: UserService,
         private readonly passwordService: PasswordService,
+        private readonly organizationService: OrganizationService,
         @Inject(OAUTH_OPTIONS) private readonly options: OAuthOptions
     ) { }
 
@@ -78,7 +92,9 @@ export class DevSeedService implements OnApplicationBootstrap {
 
         await this.seedClient(redirectUris);
         await this.seedServiceClient();
+        // After the user, which has to exist to own it.
         await this.seedUser();
+        await this.seedOrganization();
 
         this.logger.warn(
             `Dev seed active. client_id="${DEV_SEED_CLIENT_ID}" `
@@ -86,7 +102,8 @@ export class DevSeedService implements OnApplicationBootstrap {
             + `admin login="${DEV_SEED_EMAIL}" password="${DEV_SEED_PASSWORD}" `
             + `redirect_uri=${redirectUris.join(', ')} `
             + `service client_id="${DEV_SEED_SERVICE_CLIENT_ID}" `
-            + `client_secret="${DEV_SEED_SERVICE_CLIENT_SECRET}"`
+            + `client_secret="${DEV_SEED_SERVICE_CLIENT_SECRET}" `
+            + `organization="${DEV_SEED_ORGANIZATION_SLUG}"`
         );
     }
 
@@ -165,5 +182,44 @@ export class DevSeedService implements OnApplicationBootstrap {
         // The seeded account is the only way into the management dashboard on
         // a fresh database, so it has to be an admin.
         await this.userService.setAdmin(user.id, true);
+    }
+
+    /**
+     * One organization, owned by the seeded account.
+     *
+     * `createOrganization` makes the creator an owner, so this is also what puts
+     * a membership behind the `orgs` claim — without it the demo token can act
+     * in no organization at all.
+     *
+     * Matched on the slug, which is the stable key. Left alone when it is
+     * already there: unlike the account's admin flag, nothing about an
+     * organization goes stale, and a seed that rewrote a name somebody had
+     * changed would be taking their edit away.
+     *
+     * Deliberately *not* used to bind a client to. mneme reaches no
+     * organization-scoped route, and binding it would hand out authority
+     * nothing spends — `CLAUDE.md` has the example for a client that needs one.
+     */
+    private async seedOrganization(): Promise<void> {
+        const existing = await this.organizationService
+            .getOrganizationBySlug(DEV_SEED_ORGANIZATION_SLUG)
+            .catch(() => null);
+
+        if (existing) {
+            return;
+        }
+
+        const owner: UserDTO = await this.userService.getUserByUsername(
+            DEV_SEED_EMAIL
+        );
+
+        await this.organizationService.createOrganization(
+            {
+                name: DEV_SEED_ORGANIZATION_NAME,
+                slug: DEV_SEED_ORGANIZATION_SLUG,
+                description: null
+            },
+            owner.id
+        );
     }
 }

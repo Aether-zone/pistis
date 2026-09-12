@@ -902,6 +902,102 @@ describe('POST /api/oauth/token — client_credentials', () => {
             expect(claimsOf(result.body.access_token).orgs).toBeUndefined();
         });
 
+        /*
+         * A binding is easier to get wrong than a scope list — it names a uuid —
+         * and before this there was no way to correct one: the management API
+         * offered create, delete and rotate-secret, so fixing a typo meant
+         * re-registering and issuing a new secret.
+         */
+        it('can be changed after registration', async () => {
+            const first: Organization = await createOrganization('First Tenant');
+            const second: Organization = await createOrganization('Second Tenant');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: first.id, role: 'member' }
+            });
+
+            await app.get(ClientService).update(
+                await app.get(ClientService).loadClient(client.clientId),
+                { organization: { id: second.id, role: 'owner' } }
+            );
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(claimsOf(result.body.access_token).orgs).toEqual({
+                [second.id]: { role: 'owner', name: 'Second Tenant', slug: 'second-tenant' }
+            });
+        });
+
+        it('can be removed, which takes the claim with it', async () => {
+            const organization: Organization = await createOrganization('Unbind Me');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: organization.id, role: 'admin' }
+            });
+
+            await app.get(ClientService).update(
+                await app.get(ClientService).loadClient(client.clientId),
+                { organization: null }
+            );
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(claimsOf(result.body.access_token).orgs).toBeUndefined();
+        });
+
+        /*
+         * The rule has to be read over the *resulting* client: dropping the
+         * scope is only wrong because a binding survives the change, and the
+         * request says nothing about the binding at all.
+         */
+        it('refuses a change that would leave a binding without its scope', async () => {
+            const organization: Organization = await createOrganization('Keeps Its Scope');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: organization.id, role: 'member' }
+            });
+
+            const clients: ClientService = app.get(ClientService);
+
+            await expect(clients.update(
+                await clients.loadClient(client.clientId),
+                { scopes: ['profile'] }
+            )).rejects.toThrow(/organizations/);
+        });
+
+        it('refuses a change that would leave a browser nowhere to return to', async () => {
+            // The other half of the same idea: adding the authorization code
+            // grant to a client registered with no redirect URI.
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                redirectUris: [],
+                scopes: ['profile']
+            });
+
+            const clients: ClientService = app.get(ClientService);
+
+            await expect(clients.update(
+                await clients.loadClient(client.clientId),
+                { grantTypes: ['authorization_code'] }
+            )).rejects.toThrow(/redirect URI/);
+        });
+
+        it('refuses registering an authorization code client with nowhere to return to', async () => {
+            // The same check, at the other entry point. It used to live in the
+            // request schema, which the seed and any direct caller bypassed.
+            await expect(registerClient({
+                grantTypes: ['authorization_code'],
+                redirectUris: []
+            })).rejects.toThrow(/redirect URI/);
+        });
+
         it('is refused at registration without the organizations scope', async () => {
             /*
              * organon's contract says `orgs` is present only when that scope

@@ -13,9 +13,12 @@ import {
     DEV_SEED_CLIENT_ID,
     DEV_SEED_EMAIL,
     DEV_SEED_PASSWORD,
+    DEV_SEED_ORGANIZATION_SLUG,
     DEV_SEED_SERVICE_CLIENT_ID,
     DEV_SEED_SERVICE_CLIENT_SECRET
 } from "./dev-seed.service";
+import { MembershipService as MembershipServiceRef } from "../organization/membership/membership.service";
+import { OrganizationService as OrganizationServiceRef } from "../organization/organization.service";
 import { UserService as UserServiceRef } from "../user/user.service";
 import { OAUTH_OPTIONS, oauthOptionsFromEnv, type OAuthOptions } from "./oauth.options";
 import { OAuthModule } from "./oauth.module";
@@ -160,6 +163,57 @@ describe('DevSeedService', () => {
             const repaired = await clients.findByClientId(DEV_SEED_SERVICE_CLIENT_ID);
 
             expect(repaired?.scopes).toContain('objects:read:any');
+        } finally {
+            await app.close();
+        }
+    });
+
+    /*
+     * Without an organization the demo account belongs to nothing, its token
+     * carries an empty `orgs` claim, and every organization-scoped route in the
+     * workspace refuses it — which is nearly every route outside pistis.
+     */
+    it('gives the seeded account an organization to own', async () => {
+        const app: INestApplication = await bootWith({ OAUTH_DEV_SEED: 'true' });
+
+        try {
+            const organization = await app.get(OrganizationServiceRef)
+                .getOrganizationBySlug(DEV_SEED_ORGANIZATION_SLUG);
+            const owner = await app.get(UserServiceRef)
+                .getUserByUsername(DEV_SEED_EMAIL);
+            const claims = await app.get(MembershipServiceRef)
+                .getMembershipClaimsOf(owner.id);
+
+            expect(claims[organization.id]).toMatchObject({
+                role: 'owner',
+                slug: DEV_SEED_ORGANIZATION_SLUG
+            });
+        } finally {
+            await app.close();
+        }
+    });
+
+    it('leaves a renamed organization alone rather than rewriting it', async () => {
+        // Nothing about an organization goes stale, unlike the admin flag below,
+        // and a seed that undid somebody's rename would be taking their edit.
+        const app: INestApplication = await bootWith({ OAUTH_DEV_SEED: 'true' });
+
+        try {
+            const organizations = app.get(OrganizationServiceRef);
+            const seeded = await organizations.getOrganizationBySlug(
+                DEV_SEED_ORGANIZATION_SLUG
+            );
+
+            await organizations.updateOrganization(
+                { name: 'Renamed', slug: DEV_SEED_ORGANIZATION_SLUG, description: null },
+                seeded.id
+            );
+
+            await app.get(DevSeedServiceRef).onApplicationBootstrap();
+
+            await expect(
+                organizations.getOrganizationBySlug(DEV_SEED_ORGANIZATION_SLUG)
+            ).resolves.toMatchObject({ name: 'Renamed' });
         } finally {
             await app.close();
         }

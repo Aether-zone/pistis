@@ -38,6 +38,53 @@ function list(form: FormData, field: string): string[] {
 
 const SESSION_EXPIRED = 'Your session has expired. Sign in again.';
 
+/**
+ * Changes a client's organization binding, and only that.
+ *
+ * The one field an admin is likely to need to correct — it names a uuid — and
+ * the one the API could not change at all until there was a `PATCH`. Everything
+ * else about a client is left alone by sending nothing else: absent means
+ * "leave it".
+ */
+export async function rebindClient(
+  _previous: DashboardState,
+  form: FormData,
+): Promise<DashboardState> {
+  const organizationId = text(form, 'organizationId');
+
+  const result = await callWithSession<unknown>(
+    `/api/admin/clients/${encodeURIComponent(text(form, 'clientId'))}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      /*
+       * `null` removes the binding where absent would leave it — the one field
+       * with two ways to say something about it. An empty select means "none",
+       * so it has to send null rather than omit the key.
+       */
+      body: JSON.stringify({
+        organization: organizationId
+          ? {
+              id: organizationId,
+              role: text(form, 'organizationRole') || 'member',
+            }
+          : null,
+      }),
+    },
+  );
+
+  if (result === null) {
+    return { error: SESSION_EXPIRED };
+  }
+
+  if (!result.ok) {
+    return { error: result.message };
+  }
+
+  revalidatePath('/dashboard/clients');
+  withNotice('/dashboard/clients', 'Binding updated.');
+}
+
 export async function createClient(
   _previous: DashboardState,
   form: FormData,

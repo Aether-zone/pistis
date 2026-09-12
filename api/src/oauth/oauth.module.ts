@@ -4,6 +4,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AuthModule } from "../auth/auth.module";
 import { PasswordModule } from "../user/password/password.module";
 import { MembershipModule } from "../organization/membership/membership.module";
+import { OrganizationModule } from "../organization/organization.module";
 import { UserModule } from "../user/user.module";
 import { BearerTokenGuard } from "./bearer-token.guard";
 import { DevSeedService } from "./dev-seed.service";
@@ -35,6 +36,10 @@ import { TokenHash } from "./token-hash";
         // For the `orgs` claim. MembershipModule imports neither this module nor
         // OrganizationModule, so the dependency stays one-way.
         MembershipModule,
+        // For the dev seed's organization, which the demo account has to own
+        // before it can act in one. Also one-way: nothing under
+        // `organization/` imports this module.
+        OrganizationModule,
         PasswordModule,
         AuthModule,
         JwtModule
