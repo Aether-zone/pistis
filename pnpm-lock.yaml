@@ -122,8 +122,8 @@ importers:
         specifier: ~30.3.0
         version: 30.3.0(@types/node@22.20.1)(ts-node@10.9.1(@swc/core@1.15.47(@swc/helpers@0.5.23))(@types/node@22.20.1)(typescript@6.0.3))
       jest-environment-jsdom:
-        specifier: ~30.3.0
-        version: 30.3.0
+        specifier: ~30.5.1
+        version: 30.5.1
       jest-environment-node:
         specifier: ~30.3.0
         version: 30.3.0
@@ -947,10 +947,11 @@ packages:
     resolution: {integrity: sha512-OsqBjHXCn8cadasoAZBP6nWYvMsRhpMzGXTpxJ5aO04NlbdhIz+FVe3q49l0AwVhsz/cEmIpBes6gAFl1/dWQg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  '@jest/environment-jsdom-abstract@30.3.0':
-    resolution: {integrity: sha512-0hNFs5N6We3DMCwobzI0ydhkY10sT1tZSC0AAiy+0g2Dt/qEWgrcV5BrMxPczhe41cxW4qm6X+jqZaUdpZIajA==}
+  '@jest/environment-jsdom-abstract@30.5.1':
+    resolution: {integrity: sha512-J395vmP3Fb2Te0JmF7pe4si4jpfbXef1YsY4UpHYL6OOxS2molu9Dsie1VmIiUalXdtmz1P5QRgc+5hBD+ssBg==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
     peerDependencies:
+      '@types/jsdom': '*'
       canvas: ^3.0.0
       jsdom: '*'
     peerDependenciesMeta:
@@ -959,6 +960,10 @@ packages:
 
   '@jest/environment@30.3.0':
     resolution: {integrity: sha512-SlLSF4Be735yQXyh2+mctBOzNDx5s5uLv88/j8Qn1wH679PDcwy67+YdADn8NJnGjzlXtN62asGH/T4vWOkfaw==}
+    engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
+
+  '@jest/environment@30.5.1':
+    resolution: {integrity: sha512-eYJAkOsrpwDXPcoLNEG6lN9Zo3Cy35pxnVQD74vyIfsi/Q8wB/lZFsEjU4wrecOgT4ZviQDZaX/cFIJyMdMxTw==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
   '@jest/expect-utils@30.3.0':
@@ -975,6 +980,10 @@ packages:
 
   '@jest/fake-timers@30.3.0':
     resolution: {integrity: sha512-WUQDs8SOP9URStX1DzhD425CqbN/HxUYCTwVrT8sTVBfMvFqYt/s61EK5T05qnHu0po6RitXIvP9otZxYDzTGQ==}
+    engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
+
+  '@jest/fake-timers@30.5.1':
+    resolution: {integrity: sha512-rEkV6YzpBXo/L9cnj2ibyuYZuyGiNWaPUsyCu3HYJbqCV4jnEiKmf7hId20z8eKjZ0JQ9jtIYKxRSmYB/OYSsA==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
   '@jest/get-type@30.1.0':
@@ -4095,8 +4104,8 @@ packages:
     resolution: {integrity: sha512-V8eMndg/aZ+3LnCJgSm13IxS5XSBM22QSZc9BtPK8Dek6pm+hfUNfwBdvsB3d342bo1q7wnSkC38zjX259qZNA==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
 
-  jest-environment-jsdom@30.3.0:
-    resolution: {integrity: sha512-RLEOJy6ip1lpw0yqJ8tB3i88FC7VBz7i00Zvl2qF71IdxjS98gC9/0SPWYIBVXHm5hgCYK0PAlSlnHGGy9RoMg==}
+  jest-environment-jsdom@30.5.1:
+    resolution: {integrity: sha512-8lzKbC/SRbQE24wr1OOJV+aYtDAuVNKBryN6YcFiCcaZZ3I7grcZY7w91BwNvGET0ubKDmomEHZFHMaF+6pAlA==}
     engines: {node: ^18.14.0 || ^20.0.0 || ^22.0.0 || >=24.0.0}
     peerDependencies:
       canvas: ^3.0.0
@@ -6708,15 +6717,15 @@ snapshots:
 
   '@jest/diff-sequences@30.5.0': {}
 
-  '@jest/environment-jsdom-abstract@30.3.0(jsdom@26.1.0)':
+  '@jest/environment-jsdom-abstract@30.5.1(@types/jsdom@21.1.7)(jsdom@26.1.0)':
     dependencies:
-      '@jest/environment': 30.3.0
-      '@jest/fake-timers': 30.3.0
-      '@jest/types': 30.3.0
+      '@jest/environment': 30.5.1
+      '@jest/fake-timers': 30.5.1
+      '@jest/types': 30.5.1
       '@types/jsdom': 21.1.7
       '@types/node': 22.20.1
-      jest-mock: 30.3.0
-      jest-util: 30.3.0
+      jest-mock: 30.5.1
+      jest-util: 30.5.1
       jsdom: 26.1.0
 
   '@jest/environment@30.3.0':
@@ -6725,6 +6734,13 @@ snapshots:
       '@jest/types': 30.3.0
       '@types/node': 22.20.1
       jest-mock: 30.3.0
+
+  '@jest/environment@30.5.1':
+    dependencies:
+      '@jest/fake-timers': 30.5.1
+      '@jest/types': 30.5.1
+      '@types/node': 22.20.1
+      jest-mock: 30.5.1
 
   '@jest/expect-utils@30.3.0':
     dependencies:
@@ -6749,6 +6765,15 @@ snapshots:
       jest-message-util: 30.3.0
       jest-mock: 30.3.0
       jest-util: 30.3.0
+
+  '@jest/fake-timers@30.5.1':
+    dependencies:
+      '@jest/types': 30.5.1
+      '@sinonjs/fake-timers': 15.4.0
+      '@types/node': 22.20.1
+      jest-message-util: 30.5.1
+      jest-mock: 30.5.1
+      jest-util: 30.5.1
 
   '@jest/get-type@30.1.0': {}
 
@@ -10282,10 +10307,11 @@ snapshots:
       jest-util: 30.3.0
       pretty-format: 30.3.0
 
-  jest-environment-jsdom@30.3.0:
+  jest-environment-jsdom@30.5.1:
     dependencies:
-      '@jest/environment': 30.3.0
-      '@jest/environment-jsdom-abstract': 30.3.0(jsdom@26.1.0)
+      '@jest/environment': 30.5.1
+      '@jest/environment-jsdom-abstract': 30.5.1(@types/jsdom@21.1.7)(jsdom@26.1.0)
+      '@types/jsdom': 21.1.7
       jsdom: 26.1.0
     transitivePeerDependencies:
       - bufferutil
