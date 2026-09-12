@@ -26,11 +26,10 @@ import {
   TableRow,
   Text,
 } from '@aether-zone/kosmos';
-import {
-  DEFAULT_CLIENT_PRIMARY_COLOR,
-  type AdminClientDTO,
-  type OrganizationDTO,
-  type Pageable,
+import type {
+  AdminClientDTO,
+  OrganizationDTO,
+  Pageable,
 } from '@pistis/contract';
 import { redirect } from 'next/navigation';
 
@@ -57,6 +56,20 @@ const GRANT_TYPES = [
 
 /** Ordered by authority, matching organon's own ordering. */
 const ORGANIZATION_ROLES = ['member', 'admin', 'owner'] as const;
+
+/**
+ * What the colour picker opens on for a new client.
+ *
+ * Stated here rather than imported from `@pistis/contract`, which exports the
+ * same value as `DEFAULT_CLIENT_PRIMARY_COLOR` — the contract is consumed as
+ * TypeScript source whose specifiers this bundler will not resolve at runtime,
+ * so the web app can take *types* from it and not values.
+ *
+ * Safe to restate because it is only the swatch the picker starts on: the
+ * canonical default lives on the column and in the request schema, and what
+ * gets stored is whatever was submitted.
+ */
+const PICKER_DEFAULT_COLOR = '#2563eb';
 
 export default async function ClientsPage({
   searchParams,
@@ -302,7 +315,7 @@ export default async function ClientsPage({
                 name="primaryColor"
                 type="color"
                 size="sm"
-                defaultValue={DEFAULT_CLIENT_PRIMARY_COLOR}
+                defaultValue={PICKER_DEFAULT_COLOR}
               />
             </Field>
 

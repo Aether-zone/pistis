@@ -64,6 +64,10 @@ describe('toHiddenFields', () => {
   });
 });
 
+/** The custom property the stylesheet reads the client's colour from. */
+const brandOf = (): string =>
+  screen.getByRole('main').style.getPropertyValue('--brand');
+
 describe('LoginForm', () => {
   it('renders the credential fields', () => {
     render(<LoginForm hiddenFields={[]} />);
@@ -109,6 +113,66 @@ describe('LoginForm', () => {
       ['client_id', 'my-client'],
       ['state', 'xyz'],
     ]);
+  });
+
+  /*
+   * The colour reaches CSS as a custom property because it comes from the
+   * database per request — there is no finite set of classes it could be — so
+   * what is worth asserting is that it lands on the element the stylesheet
+   * reads it from.
+   */
+  it('dresses the page in the client’s colour', () => {
+    render(
+      <LoginForm
+        clientName="Rivigo"
+        primaryColor="#0f766e"
+        hiddenFields={[]}
+      />,
+    );
+
+    expect(brandOf()).toBe('#0f766e');
+  });
+
+  it('sets no colour when there is no client, leaving the stylesheet’s', () => {
+    /*
+     * The dashboard sign-in has no client to take one from, and the fallback is
+     * kosmos's own primary in CSS — so the workspace's blue is not written down
+     * a second time here.
+     */
+    render(<LoginForm hiddenFields={[]} />);
+
+    expect(brandOf()).toBe('');
+  });
+
+  it('names the client rather than pistis, so the page looks like what it is', () => {
+    /*
+     * Somebody who followed a link from another application has no reason to
+     * recognise the authorization server, and a sign-in branded as a service
+     * they have never heard of is the shape a phishing page takes.
+     */
+    render(<LoginForm clientName="Rivigo" hiddenFields={[]} />);
+
+    expect(screen.getByRole('heading', { name: 'Log in to Rivigo' }))
+      .toBeTruthy();
+  });
+
+  it('does not dress a refused request as the client that sent it', () => {
+    /*
+     * The request was refused because the client or the redirect URI could not
+     * be verified, so naming that client here would be vouching for something
+     * this server just declined to trust.
+     */
+    render(
+      <LoginForm
+        clientName="Impostor"
+        primaryColor="#ff0000"
+        hiddenFields={[]}
+        blockedReason="Unknown client."
+      />,
+    );
+
+    expect(screen.queryByText(/Impostor/)).toBeNull();
+    expect(brandOf()).toBe('');
   });
 
   it('offers no Cancel button outside an authorization flow', () => {

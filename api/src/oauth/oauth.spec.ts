@@ -422,10 +422,26 @@ describe('GET /api/oauth/authorize', () => {
         expect(result.body).toEqual({
             client_id: client.clientId,
             client_name: 'Example Client',
+            // So the sign-in page can be dressed as the client rather than as
+            // this server. The prompt is the page's only way to learn it.
+            client_primary_color: '#2563eb',
             redirect_uri: REDIRECT_URI,
             scopes: [{ name: 'profile', description: expect.any(String) }],
             state: 'xyz'
         });
+    });
+
+    it('carries the client’s own colour, not the default, when it has one', async () => {
+        const client: RegisteredClient = await registerClient({
+            primaryColor: '#0f766e'
+        });
+
+        const result: HttpResult = await get(
+            `/api/oauth/authorize?response_type=code&client_id=${client.clientId}`
+            + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=profile`
+        );
+
+        expect(result.body.client_primary_color).toBe('#0f766e');
     });
 
     it('rejects an unregistered redirect_uri without redirecting to it', async () => {

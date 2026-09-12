@@ -24,6 +24,16 @@ export const authorizationRequestSchema = z.object({
 export const authorizationPromptSchema = z.object({
     client_id: z.string(),
     client_name: z.string(),
+    /**
+     * The client's colour, so the consent screen can be dressed as the thing
+     * the person is signing in to rather than as this server.
+     *
+     * Carried on the prompt because it is the only way the sign-in page can
+     * learn it: the browser never calls the api directly (ADR 0007), and the
+     * page has no client of its own to look up. Cosmetic, and a consumer must
+     * treat it that way — nothing about an access decision turns on it.
+     */
+    client_primary_color: z.string(),
     redirect_uri: z.string(),
     scopes: z.array(scopeDescriptorSchema),
     state: z.string().optional(),
