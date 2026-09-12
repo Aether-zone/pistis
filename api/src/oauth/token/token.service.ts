@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { formatScope, type AccessTokenClaimsDTO, type IntrospectionResponseDTO, type OrganizationMembershipClaim, type TokenResponseDTO } from "@pistis/contract";
+import { formatScope, type AccessTokenClaimsDTO, type IntrospectionResponseDTO, type MembershipRole, type OrganizationMembershipClaim, type TokenResponseDTO } from "@pistis/contract";
 import { IsNull, Repository } from "typeorm";
 
 import { MembershipService } from "../../organization/membership/membership.service";
@@ -18,6 +18,12 @@ export interface IssueTokenRequest {
     /** Refresh tokens are only issued when the client may use the refresh grant. */
     withRefreshToken: boolean;
     authorizationCodeId?: string;
+    /**
+     * The organization a bound client acts in, for the client credentials
+     * grant. Passed in rather than read here, because the grant already holds
+     * the client and a second lookup on the hot path buys nothing.
+     */
+    organization?: { id: string; role: MembershipRole } | null;
 }
 
 @Injectable()
@@ -82,24 +88,48 @@ export class TokenService {
     }
 
     /**
-     * The subject's organizations, for the `orgs` claim.
+     * What goes in the `orgs` claim, from one of two places.
      *
-     * Read on every issue rather than carried along from the authorization code,
-     * so the refresh grant re-reads them: a role change or a removal takes
-     * effect on the client's next refresh instead of only on its next sign-in.
-     * That is the whole staleness budget a resource server is exposed to, since
-     * it trusts the claim without asking.
+     * For a user-delegated token it is the subject's memberships, read on every
+     * issue rather than carried along from the authorization code, so the
+     * refresh grant re-reads them: a role change or a removal takes effect on
+     * the client's next refresh instead of only on its next sign-in. That is
+     * the whole staleness budget a resource server is exposed to, since it
+     * trusts the claim without asking.
+     *
+     * For the client credentials grant there is no subject and no membership to
+     * read — the client belongs to nothing. What it may have instead is a
+     * *binding*, granted at registration, and that binding is resolved the same
+     * way on every issue, so revoking it takes effect on the next token rather
+     * than at expiry.
+     *
+     * A resource server cannot tell the two apart, and should not: the claim
+     * says what the caller may do in an organization, not how it came by it.
      */
     private async resolveOrganizations(
         request: IssueTokenRequest
     ): Promise<Record<string, OrganizationMembershipClaim> | undefined> {
-        // No user means the client credentials grant, where the subject is the
-        // client itself and memberships are meaningless.
-        if (!request.userId || !request.scopes.includes('organizations')) {
+        if (!request.scopes.includes('organizations')) {
             return undefined;
         }
 
-        return this.membershipService.getMembershipClaimsOf(request.userId);
+        if (request.userId) {
+            return this.membershipService.getMembershipClaimsOf(request.userId);
+        }
+
+        if (!request.organization) {
+            return undefined;
+        }
+
+        const claim: OrganizationMembershipClaim | null =
+            await this.membershipService.claimForOrganization(
+                request.organization.id,
+                request.organization.role
+            );
+
+        // The organization was deleted after the client was bound to it. A
+        // claim naming a tenant that is gone is worse than none.
+        return claim ? { [request.organization.id]: claim } : undefined;
     }
 
     /**

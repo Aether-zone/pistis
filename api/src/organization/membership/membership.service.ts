@@ -170,6 +170,31 @@ export class MembershipService {
         );
     }
 
+    /**
+     * One organization as an `orgs` claim entry, with a role supplied rather
+     * than looked up.
+     *
+     * For a client bound to an organization, where there is no membership row
+     * to read a role from — the binding *is* the grant. The organization still
+     * has to exist: `null` when it does not, so a client bound to something
+     * since deleted stops carrying a claim for it rather than naming a tenant
+     * that is gone.
+     */
+    async claimForOrganization(
+        organizationId: string,
+        role: MembershipRole
+    ): Promise<OrganizationMembershipClaim | null> {
+        const organization: Organization | null = await this.membershipRepository.manager
+            .getRepository(Organization)
+            .findOneBy({ id: organizationId });
+
+        if (!organization) {
+            return null;
+        }
+
+        return { role, name: organization.name, slug: organization.slug };
+    }
+
     /** Ids of the organizations the user belongs to. */
     async getOrganizationIdsOf(userId: string): Promise<string[]> {
         const memberships: Membership[] = await this.membershipRepository.findBy({ userId });

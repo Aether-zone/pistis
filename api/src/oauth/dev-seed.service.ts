@@ -25,6 +25,17 @@ export const DEV_SEED_PASSWORD = 'demo-password';
  */
 export const DEV_SEED_SERVICE_CLIENT_ID = 'mneme';
 export const DEV_SEED_SERVICE_CLIENT_SECRET = 'mneme-secret';
+/**
+ * `objects:read:any` and nothing else, because that is all mneme does: it reads
+ * objects out of loculus, which authorizes by `client_id` rather than by
+ * organization.
+ *
+ * Deliberately *not* bound to an organization, and so deliberately without the
+ * `organizations` scope. A binding is what a client needs to reach an
+ * organization-scoped route, and mneme reaches none — it takes the tenant to
+ * file a document under from the event, not from its own token. Granting the
+ * scope anyway would hand out authority nothing spends.
+ */
 export const DEV_SEED_SERVICE_CLIENT_SCOPES = ['objects:read:any'];
 
 /**

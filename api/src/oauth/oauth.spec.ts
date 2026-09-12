@@ -1,11 +1,13 @@
 import { INestApplication } from "@nestjs/common";
 import { Test, TestingModule } from "@nestjs/testing";
-import { TypeOrmModule } from "@nestjs/typeorm";
-import { type GrantType, type UserDTO } from "@pistis/contract";
+import { getRepositoryToken, TypeOrmModule } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { type GrantType, type MembershipRole, type UserDTO } from "@pistis/contract";
 import { createHash, createPublicKey, generateKeyPairSync, randomBytes, sign, verify } from "crypto";
 
 import { configureApp } from "../app/configure";
 import { AuthModule } from "../auth/auth.module";
+import { Organization } from "../organization/organization";
 import { PasswordService } from "../user/password/password.service";
 import { UserModule } from "../user/user.module";
 import { UserService } from "../user/user.service";
@@ -95,6 +97,7 @@ async function registerClient(overrides: {
     grantTypes?: GrantType[];
     scopes?: string[];
     redirectUris?: string[];
+    organization?: { id: string; role: MembershipRole };
 } = {}): Promise<RegisteredClient> {
     const clientId = `client-${randomBytes(8).toString('hex')}`;
     const clientSecret: string | undefined = overrides.clientSecret === null
@@ -107,10 +110,28 @@ async function registerClient(overrides: {
         name: 'Example Client',
         redirectUris: overrides.redirectUris ?? [REDIRECT_URI],
         grantTypes: overrides.grantTypes ?? ['authorization_code', 'refresh_token'],
-        scopes: overrides.scopes ?? ['profile', 'email']
+        scopes: overrides.scopes ?? ['profile', 'email'],
+        organization: overrides.organization
     });
 
     return { clientId, clientSecret };
+}
+
+/** An organization to bind a client to. */
+async function createOrganization(name: string): Promise<Organization> {
+    return app.get<Repository<Organization>>(getRepositoryToken(Organization))
+        .save(Object.assign(new Organization(), {
+            name,
+            slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        }));
+}
+
+/** The claims of an access token, without verifying it — the signature has its own tests. */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function claimsOf(accessToken: string): any {
+    return JSON.parse(
+        Buffer.from(accessToken.split('.')[1], 'base64url').toString()
+    );
 }
 
 /** Drives the consent step and returns the raw response. */
@@ -801,6 +822,101 @@ describe('POST /api/oauth/token — client_credentials', () => {
 
         expect(result.status).toBe(400);
         expect(result.body.error).toBe('unauthorized_client');
+    });
+
+    /*
+     * A client credentials token has no subject and so no memberships. Without
+     * a binding it belongs to no tenant at all, which is every organization
+     * scoped route in the workspace — the gap these cover.
+     */
+    describe('bound to an organization', () => {
+        it('carries the organization in the orgs claim', async () => {
+            const organization: Organization = await createOrganization('Acme');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: organization.id, role: 'admin' }
+            });
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(result.status).toBe(200);
+            // The same shape a user-delegated token carries, deliberately: a
+            // resource server should not be able to tell how the caller got it.
+            expect(claimsOf(result.body.access_token).orgs).toEqual({
+                [organization.id]: {
+                    role: 'admin',
+                    name: 'Acme',
+                    slug: 'acme'
+                }
+            });
+        });
+
+        it('still has no subject, because a client is not a person', async () => {
+            const organization: Organization = await createOrganization('Subject Check');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: organization.id, role: 'member' }
+            });
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(claimsOf(result.body.access_token).sub).toBe(client.clientId);
+        });
+
+        it('carries nothing for an unbound client', async () => {
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations']
+            });
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(claimsOf(result.body.access_token).orgs).toBeUndefined();
+        });
+
+        it('drops the claim when the organization has been deleted', async () => {
+            // A claim naming a tenant that is gone is worse than none.
+            const organization: Organization = await createOrganization('Since Deleted');
+            const client: RegisteredClient = await registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['organizations'],
+                organization: { id: organization.id, role: 'owner' }
+            });
+
+            await app.get<Repository<Organization>>(getRepositoryToken(Organization))
+                .delete({ id: organization.id });
+
+            const result: HttpResult = await form('/api/oauth/token', {
+                grant_type: 'client_credentials'
+            }, { Authorization: basic(client.clientId, client.clientSecret as string) });
+
+            expect(result.status).toBe(200);
+            expect(claimsOf(result.body.access_token).orgs).toBeUndefined();
+        });
+
+        it('is refused at registration without the organizations scope', async () => {
+            /*
+             * organon's contract says `orgs` is present only when that scope
+             * was granted, and a resource server may rely on it. Refused where
+             * the mistake is made, rather than surfacing later as 403s from
+             * every organization-scoped route.
+             */
+            const organization: Organization = await createOrganization('No Scope');
+
+            await expect(registerClient({
+                grantTypes: ['client_credentials'],
+                scopes: ['profile'],
+                organization: { id: organization.id, role: 'admin' }
+            })).rejects.toThrow(/organizations/);
+        });
     });
 });
 

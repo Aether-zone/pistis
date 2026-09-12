@@ -52,6 +52,19 @@ export async function createClient(
       redirectUris: list(form, 'redirectUris'),
       grantTypes: form.getAll('grantTypes').map(String),
       scopes: list(form, 'scopes'),
+      /*
+       * Omitted entirely when no organization was picked. The field is
+       * optional rather than nullable in the schema, so sending an empty
+       * string or a null would be refused rather than read as "unbound".
+       */
+      ...(text(form, 'organizationId')
+        ? {
+            organization: {
+              id: text(form, 'organizationId'),
+              role: text(form, 'organizationRole') || 'member',
+            },
+          }
+        : {}),
     }),
   });
 
