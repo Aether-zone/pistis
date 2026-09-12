@@ -65,6 +65,34 @@ export class ClientService {
         return this.clientRepository.save(client);
     }
 
+    /**
+     * Widens a client's scopes to include everything named.
+     *
+     * Additive, and a no-op when the client already holds them, so it is safe
+     * to call on every boot — which is what the dev seed does. A client
+     * registered by an older build otherwise keeps the scopes it was created
+     * with for ever, and the service that needs a newer one fails with a 404
+     * from whichever resource server was supposed to honour it.
+     *
+     * Deliberately not a general "set the scopes" method: narrowing is a
+     * revocation, and revoking access is not something a seed should do by
+     * accident on a database somebody is using.
+     */
+    async grantScopes(client: Client, scopes: string[]): Promise<void> {
+        const missing: string[] = scopes.filter(
+            (scope) => !client.scopes.includes(scope)
+        );
+
+        if (missing.length === 0) {
+            return;
+        }
+
+        await this.clientRepository.update(
+            { id: client.id },
+            { scopes: [...client.scopes, ...missing] }
+        );
+    }
+
     /** Replaces a confidential client's secret with a freshly hashed one. */
     async replaceSecret(client: Client, clientSecret: string): Promise<void> {
         await this.clientRepository.update(

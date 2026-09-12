@@ -150,7 +150,7 @@ Design decisions worth knowing before changing anything here:
 
   The `kid` is the RFC 7638 thumbprint of the public key, so it is derived from the key rather than configured.
 
-**To bootstrap a fresh database, seed an admin and a client** (`OAUTH_DEV_SEED=true`). Once signed in, the dashboard can create everything else. It is off by default, refuses to run under `NODE_ENV=production`, and *converges* the seeded account on each boot rather than skipping it when present — a database seeded by an older build otherwise keeps a demo account that is not an admin, leaving the dashboard unreachable. It logs the credentials it created:
+**To bootstrap a fresh database, seed an admin and two clients** (`OAUTH_DEV_SEED=true`). Once signed in, the dashboard can create everything else. It is off by default, refuses to run under `NODE_ENV=production`, and *converges* what it seeded on each boot rather than skipping it when present — a database seeded by an older build otherwise keeps a demo account that is not an admin (leaving the dashboard unreachable) or a service client missing a scope added since (leaving that service reading nothing). It logs the credentials it created:
 
 ```sh
 OAUTH_DEV_SEED=true \
@@ -158,7 +158,12 @@ OAUTH_DEV_SEED_REDIRECT_URIS=http://localhost:3002/callback \
 PORT=3001 pnpm start:server
 # client_id="demo-client" client_secret="demo-secret"
 # login="demo@example.com" password="demo-password"
+# service client_id="mneme" client_secret="mneme-secret"
 ```
+
+The second is a different *kind* of client: no redirect, no consent, no resource owner. **mneme** signs in as itself with the client credentials grant to read uploaded files out of loculus and index them, which is why it holds `objects:read:any` — the scope that lets a service read an object another client uploaded. Every other service borrows the caller's token and needs no registration here.
+
+Convergence cannot repair a client *secret*, which is hashed and cannot be read back to compare. A client seeded with a different one keeps it; delete the client and restart.
 
 It is a development affordance, not a provisioning story — a real one still wants an authenticated admin API.
 
