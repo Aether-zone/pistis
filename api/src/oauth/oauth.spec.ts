@@ -98,6 +98,7 @@ async function registerClient(overrides: {
     scopes?: string[];
     redirectUris?: string[];
     organization?: { id: string; role: MembershipRole };
+    primaryColor?: string;
 } = {}): Promise<RegisteredClient> {
     const clientId = `client-${randomBytes(8).toString('hex')}`;
     const clientSecret: string | undefined = overrides.clientSecret === null
@@ -111,11 +112,45 @@ async function registerClient(overrides: {
         redirectUris: overrides.redirectUris ?? [REDIRECT_URI],
         grantTypes: overrides.grantTypes ?? ['authorization_code', 'refresh_token'],
         scopes: overrides.scopes ?? ['profile', 'email'],
+        primaryColor: overrides.primaryColor,
         organization: overrides.organization
     });
 
     return { clientId, clientSecret };
 }
+
+/*
+ * The colour is not part of the token or any grant — it is how a client is
+ * shown — so it is covered where it is stored rather than in the flows above.
+ */
+describe('a client’s colour', () => {
+    it('is the workspace default when registration names none', async () => {
+        const client: RegisteredClient = await registerClient();
+
+        await expect(
+            app.get(ClientService).loadClient(client.clientId)
+        ).resolves.toMatchObject({ primaryColor: '#2563eb' });
+    });
+
+    it('is kept as registered, and can be changed on its own', async () => {
+        const client: RegisteredClient = await registerClient({
+            primaryColor: '#123456'
+        });
+        const clients: ClientService = app.get(ClientService);
+
+        await expect(clients.loadClient(client.clientId))
+            .resolves.toMatchObject({ primaryColor: '#123456' });
+
+        // Nothing else in the request, so nothing else moves.
+        const updated = await clients.update(
+            await clients.loadClient(client.clientId),
+            { primaryColor: '#abcdef' }
+        );
+
+        expect(updated.primaryColor).toBe('#abcdef');
+        expect(updated.name).toBe('Example Client');
+    });
+});
 
 /** An organization to bind a client to. */
 async function createOrganization(name: string): Promise<Organization> {
@@ -387,10 +422,26 @@ describe('GET /api/oauth/authorize', () => {
         expect(result.body).toEqual({
             client_id: client.clientId,
             client_name: 'Example Client',
+            // So the sign-in page can be dressed as the client rather than as
+            // this server. The prompt is the page's only way to learn it.
+            client_primary_color: '#2563eb',
             redirect_uri: REDIRECT_URI,
             scopes: [{ name: 'profile', description: expect.any(String) }],
             state: 'xyz'
         });
+    });
+
+    it('carries the client’s own colour, not the default, when it has one', async () => {
+        const client: RegisteredClient = await registerClient({
+            primaryColor: '#0f766e'
+        });
+
+        const result: HttpResult = await get(
+            `/api/oauth/authorize?response_type=code&client_id=${client.clientId}`
+            + `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=profile`
+        );
+
+        expect(result.body.client_primary_color).toBe('#0f766e');
     });
 
     it('rejects an unregistered redirect_uri without redirecting to it', async () => {

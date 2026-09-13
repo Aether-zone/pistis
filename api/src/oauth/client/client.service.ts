@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType, type MembershipRole, type UpdateClientDTO } from "@pistis/contract";
+import { DEFAULT_CLIENT_PRIMARY_COLOR, formatScope, parseScope, SUPPORTED_SCOPE_NAMES, type GrantType, type MembershipRole, type UpdateClientDTO } from "@pistis/contract";
 import { Repository } from "typeorm";
 
 import { PasswordEncoder } from "../../user/password/password.encoder";
@@ -15,6 +15,8 @@ export interface ClientRegistration {
     redirectUris: string[];
     grantTypes: GrantType[];
     scopes: string[];
+    /** Six-digit hex. Defaults to the workspace's own blue when omitted. */
+    primaryColor?: string;
     /**
      * The organization this client acts in, with the role the grant carries.
      *
@@ -75,6 +77,8 @@ export class ClientService {
         client.redirectUris = registration.redirectUris;
         client.grantTypes = registration.grantTypes;
         client.scopes = registration.scopes;
+        client.primaryColor =
+            registration.primaryColor ?? DEFAULT_CLIENT_PRIMARY_COLOR;
         client.organizationId = registration.organization?.id ?? null;
         client.organizationRole = registration.organization?.role ?? null;
 
@@ -124,6 +128,7 @@ export class ClientService {
         this.assertCoherent(client.clientId, resulting);
 
         client.name = changes.name ?? client.name;
+        client.primaryColor = changes.primaryColor ?? client.primaryColor;
         client.redirectUris = resulting.redirectUris;
         client.grantTypes = resulting.grantTypes;
         client.scopes = resulting.scopes;

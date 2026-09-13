@@ -39,7 +39,7 @@
 }
 
 .whoBadge {
-  margin-left: 0.375rem;
+  margin-left: var(--kosmos-spacing-2);
 }
 
 /* Sidenav is `w-64` on its own; the grid column decides the width here. */
@@ -51,7 +51,13 @@
 .main {
   grid-area: main;
   min-width: 0;
-  padding: 1.5rem 1.5rem 4rem;
+  /*
+   * Wider side padding than the old 1.5rem, and a deep tail so the last card
+   * on a long page is not flush against the viewport edge. Tokens, so this
+   * sits on the same scale as the gaps inside the content.
+   */
+  padding: var(--kosmos-spacing-8) var(--kosmos-spacing-8)
+    var(--kosmos-spacing-16);
 }
 
 /* Below this the sidebar becomes a strip above the content rather than beside it. */
@@ -73,7 +79,7 @@
   .sidebarContent {
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0.5rem;
+    gap: var(--kosmos-spacing-2);
     overflow-y: visible;
   }
 

@@ -4,11 +4,6 @@ import {
   Alert,
   AlertDescription,
   Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
   Field,
   Form,
   Heading,
@@ -19,13 +14,23 @@ import {
   Text,
 } from '@aether-zone/kosmos';
 import type { ScopeDescriptorDTO } from '@pistis/contract';
-import { useActionState } from 'react';
+import { useActionState, type CSSProperties } from 'react';
 
 import { submitLogin, type LoginFormState } from './actions';
+import { BrandPanel } from './brand-panel';
+import { readableInkFor } from './readable-ink';
 import styles from './login.module.css';
 
 export interface LoginFormProps {
   clientName?: string;
+  /**
+   * The client's colour, where there is a client.
+   *
+   * Absent for the dashboard sign-in, which has none to take one from, and the
+   * stylesheet falls back to kosmos's own primary — so there is no blue written
+   * down twice.
+   */
+  primaryColor?: string;
   scopes?: ScopeDescriptorDTO[];
   hiddenFields: Array<[string, string]>;
   /**
@@ -47,54 +52,78 @@ const INITIAL: LoginFormState = {};
  */
 export function LoginForm({
   clientName,
+  primaryColor,
   scopes,
   hiddenFields,
   blockedReason,
 }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(submitLogin, INITIAL);
 
+  /*
+   * The colour reaches CSS as a custom property rather than a class: it comes
+   * from the database per request, so there is no finite set of classes it
+   * could be. Every rule in the stylesheet reads `--brand`, so this one
+   * declaration is the whole difference between two clients — and setting
+   * nothing leaves the stylesheet's own fallback in place.
+   */
+  const brand = primaryColor
+    ? ({
+        '--brand': primaryColor,
+        /*
+         * Chosen here rather than mixed toward white in CSS. A client may pick
+         * a pale colour, and near-white text on it cannot be read — which is
+         * what the first version of this panel did.
+         */
+        '--brand-ink': readableInkFor(primaryColor),
+      } as CSSProperties)
+    : undefined;
+
   if (blockedReason) {
+    /*
+     * No client name and the workspace's own colour, even though a rejected
+     * request may well have carried one: the request was refused because the
+     * client or the redirect URI could not be verified, so dressing the page as
+     * that client would be vouching for something this server just declined to
+     * trust.
+     */
     return (
       <main className={styles.page}>
-        <Card className={styles.card}>
-          <CardHeader>
-            <Heading level={1} size="heading">
+        <div className={styles.split}>
+          <BrandPanel />
+          <div className={styles.form}>
+            <Heading level={1} size="heading" className={styles.heading}>
               Sign in
             </Heading>
-          </CardHeader>
-          <CardContent>
             {/* Alert defaults to role="alert"; this is a standing explanation
                 rather than something that just went wrong, so it stays a
                 status the way the plain markup had it. */}
             <Alert role="status">
               <AlertDescription>{blockedReason}</AlertDescription>
             </Alert>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className={styles.page}>
-      <Card className={styles.card}>
-        <Form action={formAction}>
-          <CardHeader>
-            <Heading level={1} size="heading">
-              Sign in
-            </Heading>
-            <CardDescription>
-              {clientName ? (
-                <>
-                  <strong>{clientName}</strong> wants to access your account.
-                </>
-              ) : (
-                'Sign in to manage clients, users and tokens.'
-              )}
-            </CardDescription>
-          </CardHeader>
+    <main className={styles.page} style={brand}>
+      <div className={styles.split}>
+        <BrandPanel clientName={clientName} />
 
-          <CardContent className={styles.content}>
+        <Form action={formAction} className={styles.form}>
+          <div>
+            <Heading level={1} size="heading" className={styles.heading}>
+              {clientName ? `Log in to ${clientName}` : 'Sign in'}
+            </Heading>
+            <Text as="p" size="body-small" className={styles.lede}>
+              {clientName
+                ? 'Log in using your official email'
+                : 'Sign in to manage clients, users and tokens.'}
+            </Text>
+          </div>
+
+          <div className={styles.fields}>
             {hiddenFields.map(([name, value]) => (
               <input key={name} type="hidden" name={name} value={value} />
             ))}
@@ -141,7 +170,7 @@ export function LoginForm({
                 <AlertDescription>{state.error}</AlertDescription>
               </Alert>
             ) : null}
-          </CardContent>
+          </div>
 
           {/*
             Allow comes first in the DOM deliberately. Pressing Enter in a field
@@ -151,11 +180,13 @@ export function LoginForm({
             had just signed in successfully. `.actions` reverses the row so the
             buttons still read Cancel, Allow left to right.
           */}
-          <CardFooter className={styles.actions}>
+          <div className={clientName ? styles.actions : undefined}>
             <Button
               type="submit"
               name="decision"
               value="allow"
+              variant="primary"
+              className={styles.submit}
               disabled={pending}
             >
               {pending ? 'Signing in…' : clientName ? 'Allow' : 'Sign in'}
@@ -171,9 +202,9 @@ export function LoginForm({
                 Cancel
               </Button>
             ) : null}
-          </CardFooter>
+          </div>
         </Form>
-      </Card>
+      </div>
     </main>
   );
 }

@@ -1,25 +1,176 @@
 /**
- * Layout only. Kosmos owns the card surface, typography and controls, so what
- * is left here is where the card sits and how its rows are spaced.
+ * The split sign-in: a coloured panel that says what you are signing in to, and
+ * a white one that asks for credentials.
+ *
+ * Kosmos still owns typography and controls. What is here is the two panels,
+ * and the client's colour — which arrives as an inline `--brand` custom
+ * property on `.page`, because the value comes from the database at request
+ * time and cannot be a class. Everything below reads it rather than naming a
+ * blue, so a client with no colour of its own and a client with one differ by
+ * exactly that one declaration.
  *
  * These rules are unlayered and kosmos ships its utilities in `@layer
  * utilities`, so an unlayered declaration wins the cascade whatever the
- * stylesheet order — `.actions` overrides the footer's flex defaults without
- * having to out-specify them.
+ * stylesheet order.
  */
 
 .page {
+  /*
+   * The client's colour arrives as an inline `--brand`. Absent — the dashboard
+   * sign-in, or a refused request — it falls back to kosmos's own primary,
+   * which is *why* this is a variable and not a copy of a hex value in the
+   * web app: the workspace's blue is the design system's to state, and the
+   * page cannot import a runtime value from the contract anyway.
+   */
+  --brand: var(--kosmos-color-primary, #2563eb);
+  /*
+   * Set alongside `--brand` when a client has a colour; the fallback matches
+   * the default brand above, which is dark enough for white.
+   */
+  --brand-ink: #ffffff;
+  /* The muted variants are the ink faded into the brand, so they follow it
+     whichever way round it went. */
+  --brand-ink-muted: color-mix(in srgb, var(--brand-ink) 78%, var(--brand));
+  --brand-ink-faint: color-mix(in srgb, var(--brand-ink) 62%, var(--brand));
+
+  /* The ambient blobs, which are the colour at a low opacity rather than a
+     second colour — so any hue the client picks stays coherent. */
+  background:
+    radial-gradient(
+      42rem 42rem at 8% -8%,
+      color-mix(in srgb, var(--brand) 22%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      38rem 38rem at 104% 108%,
+      color-mix(in srgb, var(--brand) 26%, transparent),
+      transparent 60%
+    ),
+    var(--kosmos-color-background, #f6f8fe);
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 4rem 1rem;
+  min-block-size: 100vh;
+  padding: 3rem 1rem;
 }
 
-.card {
-  width: 100%;
-  max-width: 26rem;
+.split {
+  background: var(--kosmos-color-surface, #fff);
+  border-radius: 0.5rem;
+  box-shadow: 0 1.5rem 4rem rgb(16 24 40 / 0.12);
+  display: grid;
+  /* The brand panel is fixed and the form takes the rest, so a long client
+     name cannot squeeze the password field. */
+  grid-template-columns: 20rem 1fr;
+  inline-size: 100%;
+  max-inline-size: 52rem;
+  overflow: hidden;
 }
 
-.content {
+/* One column below the fold of a phone: side by side, neither half is usable. */
+@media (max-width: 47rem) {
+  .split {
+    grid-template-columns: 1fr;
+    max-inline-size: 26rem;
+  }
+}
+
+.brand {
+  background: var(--brand);
+  /* Not `white`: a pale brand colour would leave white text unreadable, so the
+     ink is chosen against the colour — see `readable-ink.ts`. */
+  color: var(--brand-ink);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 2.5rem 2rem;
+}
+
+@media (max-width: 47rem) {
+  .brand {
+    /* The illustration and the blurb are the first thing to go when there is
+       no room: the name is what orients somebody, the rest is decoration. */
+    gap: 1rem;
+    padding: 1.75rem 2rem;
+  }
+
+  .brandBody {
+    display: none;
+  }
+}
+
+.wordmark {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.tagline {
+  color: var(--brand-ink-muted);
+  font-size: 0.8125rem;
+  margin: 0.25rem 0 0;
+}
+
+.brandBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.illustration {
+  align-self: center;
+  block-size: auto;
+  inline-size: 8.5rem;
+  /* Decorative: the heading and blurb beneath it say the same thing. */
+  opacity: 0.9;
+}
+
+.brandHeading {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0.5rem 0 0;
+}
+
+.brandText {
+  color: var(--brand-ink-muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.legal {
+  color: var(--brand-ink-faint);
+  font-size: 0.6875rem;
+  margin: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 3rem 2.75rem;
+}
+
+@media (max-width: 47rem) {
+  .form {
+    padding: 2rem 1.75rem;
+  }
+}
+
+.heading {
+  margin: 0;
+}
+
+.lede {
+  margin: 0 0 0.5rem;
+}
+
+.fields {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -32,13 +183,30 @@
 }
 
 /*
+ * The primary button wears the client's colour. Kosmos's own primary is a
+ * variable, so setting it on the element re-skins the button without
+ * overriding its padding, radius or focus ring.
+ */
+.submit {
+  --kosmos-color-primary: var(--brand);
+  --kosmos-color-primary-foreground: var(--brand-ink);
+  inline-size: 100%;
+}
+
+/*
  * Reversed, because the markup puts Allow first so that it is the form's
  * default submit button (see the note in login-form.tsx). In `row-reverse` the
  * main axis starts at the right, so `flex-start` is what keeps the pair
  * right-aligned — and the first child, Allow, stays the rightmost.
  */
 .actions {
+  display: flex;
   flex-direction: row-reverse;
   gap: 0.75rem;
   justify-content: flex-start;
+}
+
+.actions .submit {
+  inline-size: auto;
+  flex: 1;
 }

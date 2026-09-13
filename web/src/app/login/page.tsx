@@ -52,6 +52,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   return (
     <LoginForm
       clientName={prompt.client_name}
+      primaryColor={prompt.client_primary_color}
       scopes={scopes}
       hiddenFields={toHiddenFields(params)}
     />

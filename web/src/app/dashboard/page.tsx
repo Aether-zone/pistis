@@ -92,7 +92,7 @@ export default async function OverviewPage({
   }
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <div className={styles.sectionHead}>
@@ -125,6 +125,6 @@ export default async function OverviewPage({
           ))}
         </div>
       )}
-    </>
+    </div>
   );
 }

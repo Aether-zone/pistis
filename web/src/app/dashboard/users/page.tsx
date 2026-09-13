@@ -2,8 +2,16 @@ import {
   Alert,
   AlertDescription,
   Badge,
+  Button,
   Card,
   Checkbox,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   Field,
   Heading,
   Input,
@@ -57,7 +65,7 @@ export default async function UsersPage({
   const userList = result.data;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <section className={styles.section}>
@@ -124,59 +132,73 @@ export default async function UsersPage({
           </Table>
         </Card>
 
-        <details className={styles.details}>
-          <summary className={styles.summary}>Create a user</summary>
-          <ActionForm action={createUser} className={styles.form}>
-            <Field>
-              <Label htmlFor="userName">Name</Label>
-              <Input id="userName" name="name" size="sm" required />
-            </Field>
+        {/* A dialog, like registering a client: the disclosure this was
+            pushed the form in below the table and left it open there. */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="primary" className={styles.pageAction}>
+              Create a user
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create a user</DialogTitle>
+              <DialogDescription>
+                The password can be changed later from the table.
+              </DialogDescription>
+            </DialogHeader>
+            <ActionForm action={createUser} className={styles.form}>
+              <Field>
+                <Label htmlFor="userName">Name</Label>
+                <Input id="userName" name="name" size="sm" required />
+              </Field>
 
-            <Field>
-              <Label htmlFor="userEmail">Email</Label>
-              <Input
-                id="userEmail"
-                name="email"
-                type="email"
-                size="sm"
-                required
-              />
-            </Field>
+              <Field>
+                <Label htmlFor="userEmail">Email</Label>
+                <Input
+                  id="userEmail"
+                  name="email"
+                  type="email"
+                  size="sm"
+                  required
+                />
+              </Field>
 
-            <Field>
-              <Label htmlFor="userPassword">
-                Password (12 characters or more)
-              </Label>
-              <Input
-                id="userPassword"
-                name="password"
-                type="password"
-                size="sm"
-                minLength={12}
-                required
-              />
-            </Field>
+              <Field>
+                <Label htmlFor="userPassword">
+                  Password (12 characters or more)
+                </Label>
+                <Input
+                  id="userPassword"
+                  name="password"
+                  type="password"
+                  size="sm"
+                  minLength={12}
+                  required
+                />
+              </Field>
 
-            <Field>
-              <Text size="label" weight="semibold">
-                Role
-              </Text>
-              <Label className={styles.check}>
-                <Checkbox name="admin" />
-                <Text as="span" size="body-small">
-                  Administrator
+              <Field>
+                <Text size="label" weight="semibold">
+                  Role
                 </Text>
-              </Label>
-            </Field>
+                <Label className={styles.check}>
+                  <Checkbox name="admin" />
+                  <Text as="span" size="body-small">
+                    Administrator
+                  </Text>
+                </Label>
+              </Field>
 
-            <div className={styles.span}>
-              <SubmitButton variant="primary" pendingLabel="Creating…">
-                Create user
-              </SubmitButton>
-            </div>
-          </ActionForm>
-        </details>
+              <DialogFooter className={styles.span}>
+                <SubmitButton variant="primary" pendingLabel="Creating…">
+                  Create user
+                </SubmitButton>
+              </DialogFooter>
+            </ActionForm>
+          </DialogContent>
+        </Dialog>
       </section>
-    </>
+    </div>
   );
 }

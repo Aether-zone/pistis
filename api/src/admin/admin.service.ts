@@ -58,10 +58,16 @@ export class AdminService {
             redirectUris: request.redirectUris,
             grantTypes: request.grantTypes,
             scopes: request.scopes,
+            primaryColor: request.primaryColor,
             organization: request.organization
         });
 
         return { clientId: request.clientId, clientSecret: clientSecret ?? '' };
+    }
+
+    /** One client, or a 404. */
+    async getClient(clientId: string): Promise<AdminClientDTO> {
+        return this.toClientDTO(await this.loadClient(clientId));
     }
 
     /**
@@ -220,6 +226,7 @@ export class AdminService {
             redirectUris: client.redirectUris,
             grantTypes: client.grantTypes,
             scopes: client.scopes,
+            primaryColor: client.primaryColor,
             /*
              * Null unless both columns are set. They are written together and
              * a role without an organization means nothing, so a half-set pair

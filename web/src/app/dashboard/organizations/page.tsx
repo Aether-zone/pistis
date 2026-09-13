@@ -2,7 +2,15 @@ import {
   Alert,
   AlertDescription,
   Badge,
+  Button,
   Card,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   Field,
   Heading,
   Input,
@@ -57,7 +65,7 @@ export default async function OrganizationsPage({
   const organizations = result.data.items;
 
   return (
-    <>
+    <div className={styles.page}>
       <Notice notice={notice} />
 
       <div className={styles.sectionHead}>
@@ -115,45 +123,55 @@ export default async function OrganizationsPage({
         </Table>
       </Card>
 
-      <details className={styles.details}>
-        <summary className={styles.summary}>Create an organization</summary>
-        <ActionForm action={createOrganization} className={styles.form}>
-          <Field>
-            <Label htmlFor="organizationName">Name</Label>
-            <Input id="organizationName" name="name" size="sm" required />
-          </Field>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="primary" className={styles.pageAction}>
+            Create an organization
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create an organization</DialogTitle>
+            <DialogDescription>You become its owner.</DialogDescription>
+          </DialogHeader>
+          <ActionForm action={createOrganization} className={styles.form}>
+            <Field>
+              <Label htmlFor="organizationName">Name</Label>
+              <Input id="organizationName" name="name" size="sm" required />
+            </Field>
 
-          <Field>
-            <Label htmlFor="organizationSlug">
-              Slug (lowercase, hyphen separated)
-            </Label>
-            <Input
-              id="organizationSlug"
-              name="slug"
-              size="sm"
-              pattern="[a-z0-9]+(-[a-z0-9]+)*"
-              required
-            />
-          </Field>
+            <Field>
+              <Label htmlFor="organizationSlug">
+                Slug (lowercase, hyphen separated)
+              </Label>
+              <Input
+                id="organizationSlug"
+                name="slug"
+                size="sm"
+                pattern="[a-z0-9]+(-[a-z0-9]+)*"
+                required
+              />
+            </Field>
 
-          <Field>
-            <Label htmlFor="organizationDescription">
-              Description (optional)
-            </Label>
-            <Input
-              id="organizationDescription"
-              name="description"
-              size="sm"
-            />
-          </Field>
+            <Field>
+              <Label htmlFor="organizationDescription">
+                Description (optional)
+              </Label>
+              <Input
+                id="organizationDescription"
+                name="description"
+                size="sm"
+              />
+            </Field>
 
-          <div className={styles.span}>
-            <SubmitButton variant="primary" pendingLabel="Creating…">
-              Create organization
-            </SubmitButton>
-          </div>
-        </ActionForm>
-      </details>
-    </>
+            <DialogFooter className={styles.span}>
+              <SubmitButton variant="primary" pendingLabel="Creating…">
+                Create organization
+              </SubmitButton>
+            </DialogFooter>
+          </ActionForm>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

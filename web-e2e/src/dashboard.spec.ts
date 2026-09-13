@@ -47,7 +47,7 @@ test.describe('organizations', () => {
       .click();
 
     const slug = uniqueSlug('e2e');
-    await page.getByText('Create an organization').click();
+    await page.getByRole('button', { name: 'Create an organization' }).click();
     await page.getByLabel('Name').fill('E2E Org');
     await page.getByLabel('Slug (lowercase, hyphen separated)').fill(slug);
     await page.getByRole('button', { name: 'Create organization' }).click();
@@ -64,10 +64,14 @@ test.describe('organizations', () => {
       .click();
 
     const slug = uniqueSlug('members');
-    await page.getByText('Create an organization').click();
+    await page.getByRole('button', { name: 'Create an organization' }).click();
     await page.getByLabel('Name').fill('Roster Org');
     await page.getByLabel('Slug (lowercase, hyphen separated)').fill(slug);
     await page.getByRole('button', { name: 'Create organization' }).click();
+    await expect(page.getByText(/you are its owner/)).toBeVisible();
+    // The dialog stays open to show that message, and its backdrop covers the
+    // table the link is in.
+    await page.keyboard.press('Escape');
     await page.getByRole('link', { name: 'Roster Org' }).first().click();
     await page.waitForURL(/\/dashboard\/organizations\/[0-9a-f-]{36}/);
 

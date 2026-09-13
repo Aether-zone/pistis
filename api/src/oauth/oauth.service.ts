@@ -44,6 +44,7 @@ export class OAuthService {
         return {
             client_id: client.clientId,
             client_name: client.name,
+            client_primary_color: client.primaryColor,
             redirect_uri: redirectUri,
             scopes: describeScopes(scopes),
             state: request.state

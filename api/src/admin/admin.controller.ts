@@ -41,6 +41,11 @@ export class AdminController {
      * Changes a client. `PATCH` rather than `PUT`: every field is optional and
      * absent means "leave it", which is not what a replace says.
      */
+    @Get('/clients/:clientId')
+    getClient(@Param('clientId') clientId: string): Promise<AdminClientDTO> {
+        return this.adminService.getClient(clientId);
+    }
+
     @Patch('/clients/:clientId')
     updateClient(
         @Param('clientId') clientId: string,

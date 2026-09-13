@@ -42,7 +42,9 @@ export default async function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const me = await callWithSession<UserDTO & { admin?: boolean }>('/api/auth/me');
+  const me = await callWithSession<UserDTO & { admin?: boolean }>(
+    '/api/auth/me',
+  );
 
   if (me === null) {
     redirect('/login');
