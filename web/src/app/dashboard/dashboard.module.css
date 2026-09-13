@@ -136,37 +136,10 @@
 
 /* Forms ---------------------------------------------------------------- */
 
-/*
- * The disclosure that three screens still put a form inside. The clients
- * screen uses a dialog instead, which brings its own surface — this is the
- * lighter affordance for a form that is a footnote to the table above it.
- */
-.details {
-  border: 1px solid var(--kosmos-color-border);
-  border-radius: var(--kosmos-radius-lg);
-  background: var(--kosmos-color-surface);
-}
-
-.summary {
-  padding: var(--kosmos-spacing-3) var(--kosmos-spacing-4);
-  font-size: var(--kosmos-font-size-body-small);
-  font-weight: var(--kosmos-font-weight-semibold);
-  cursor: pointer;
-}
-
 .form {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
   gap: var(--kosmos-spacing-4);
-}
-
-/*
- * A form inside a dialog or a card gets its padding from the container, so the
- * grid itself carries none. `.formPad` is for the one place that has no
- * container of its own.
- */
-.formPad {
-  padding: var(--kosmos-spacing-4);
 }
 
 .checks {

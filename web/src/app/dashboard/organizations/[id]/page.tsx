@@ -4,8 +4,16 @@ import {
   Badge,
   BreadcrumbItem,
   Breadcrumbs,
+  Button,
   Card,
   CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
   Field,
   Heading,
   Input,
@@ -269,71 +277,80 @@ export default async function OrganizationPage({
       </Card>
 
       {canManage ? (
-        <details className={styles.details}>
-          <summary className={styles.summary}>Add a member</summary>
-          <ActionForm
-            action={addMember}
-            className={`${styles.form} ${styles.formPad}`}
-          >
-            <input
-              type="hidden"
-              name="organizationId"
-              value={organization.data.id}
-            />
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="primary" className={styles.pageAction}>
+              Add a member
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add a member</DialogTitle>
+              <DialogDescription>
+                The user must already have an account.
+              </DialogDescription>
+            </DialogHeader>
+            <ActionForm action={addMember} className={styles.form}>
+              <input
+                type="hidden"
+                name="organizationId"
+                value={organization.data.id}
+              />
 
-            <Field>
-              <Label htmlFor="memberUserId">User</Label>
-              {candidates.length > 0 ? (
+              <Field>
+                <Label htmlFor="memberUserId">User</Label>
+                {candidates.length > 0 ? (
+                  <Select
+                    className={styles.select}
+                    id="memberUserId"
+                    name="userId"
+                    size="sm"
+                    required
+                  >
+                    {candidates.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name} · {user.email}
+                      </option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    id="memberUserId"
+                    name="userId"
+                    size="sm"
+                    placeholder="User id"
+                    required
+                  />
+                )}
+              </Field>
+
+              <Field>
+                <Label htmlFor="memberRole">Role</Label>
                 <Select
                   className={styles.select}
-                  id="memberUserId"
-                  name="userId"
+                  id="memberRole"
+                  name="role"
                   size="sm"
-                  required
+                  defaultValue="member"
                 >
-                  {candidates.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name} · {user.email}
+                  {ROLES.filter(
+                    (role) => role !== 'owner' || canManageOwners,
+                  ).map((role) => (
+                    <option key={role} value={role}>
+                      {role}
                     </option>
                   ))}
                 </Select>
-              ) : (
-                <Input
-                  id="memberUserId"
-                  name="userId"
-                  size="sm"
-                  placeholder="User id"
-                  required
-                />
-              )}
-            </Field>
+              </Field>
 
-            <Field>
-              <Label htmlFor="memberRole">Role</Label>
-              <Select
-                className={styles.select}
-                id="memberRole"
-                name="role"
-                size="sm"
-                defaultValue="member"
-              >
-                {ROLES.filter(
-                  (role) => role !== 'owner' || canManageOwners,
-                ).map((role) => (
-                  <option key={role} value={role}>
-                    {role}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-
-            <div className={styles.span}>
-              <SubmitButton variant="primary" pendingLabel="Adding…">
-                Add member
-              </SubmitButton>
-            </div>
-          </ActionForm>
-        </details>
+              <DialogFooter className={styles.span}>
+                <SubmitButton variant="primary" pendingLabel="Adding…">
+                  Add member
+                </SubmitButton>
+              </DialogFooter>
+            </ActionForm>
+          </DialogContent>
+        </Dialog>
       ) : null}
     </div>
   );
