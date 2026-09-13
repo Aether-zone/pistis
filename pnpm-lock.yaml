@@ -10,8 +10,8 @@ importers:
   .:
     dependencies:
       '@aether-zone/kosmos':
-        specifier: ^0.3.0
-        version: 0.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: ^0.3.1
+        version: 0.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@nestjs/common':
         specifier: ^11.0.0
         version: 11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -252,8 +252,8 @@ importers:
   web:
     dependencies:
       '@aether-zone/kosmos':
-        specifier: ^0.3.0
-        version: 0.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: ^0.3.1
+        version: 0.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@aether-zone/organon':
         specifier: ^0.2.0
         version: 0.2.0(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/config@4.0.4(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.2))(rxjs@7.8.2))(@nestjs/core@11.2.3)(@nestjs/passport@11.0.5(@nestjs/common@11.2.3(reflect-metadata@0.2.2)(rxjs@7.8.2))(passport@0.7.0))(passport-jwt@4.0.1)(passport@0.7.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)(zod@4.6.2)
@@ -286,8 +286,8 @@ importers:
 
 packages:
 
-  '@aether-zone/kosmos@0.3.0':
-    resolution: {integrity: sha512-CP/iqQW18ht7n85C/a1EnR5ujOnd8uYNfiisWOlI0YmKOO1Xa4yvsdh315I+IkvWTTzn/H5ZVZJfX6w/+wpiYg==}
+  '@aether-zone/kosmos@0.3.1':
+    resolution: {integrity: sha512-mT6Vh2Nu7tlbieby0Zvyz5993BQ8C+976cV4YVPUbAk7Kdx2E+OZ3USNz5vxoJkyEvl4fiZvI+3chx06ssmnXQ==}
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -6093,7 +6093,7 @@ packages:
 
 snapshots:
 
-  '@aether-zone/kosmos@0.3.0(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@aether-zone/kosmos@0.3.1(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)

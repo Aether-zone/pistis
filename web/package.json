@@ -11,7 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@aether-zone/kosmos": "^0.3.0",
+    "@aether-zone/kosmos": "^0.3.1",
     "@aether-zone/organon": "^0.2.0",
     "@nestjs/config": "^4.0.0",
     "@nestjs/passport": "^11.0.0",
